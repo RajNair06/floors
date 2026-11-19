@@ -1,18 +1,31 @@
-# Floor Plan Checker
+# Floors
 
-A deterministic floor plan validation tool that checks architectural layouts against 10 design rules. Built as an evaluation benchmark for testing LLM-generated floor plans.
+A deterministic floor plan validation tool that checks architectural layouts against 10 design rules. Built for evaluating LLM-generated floor plans with interactive editing and 3D visualization.
 
-**Live Demo:** [Deploy to Vercel to get your URL]
+**Live Demo:** https://floors-sigma.vercel.app  
+**MCP Endpoint:** https://floors-sigma.vercel.app/mcp/
 
 ## Features
 
+### Core Validation
 - **10 Validation Rules**: Overlap detection, entrance requirements, room connectivity, window placement, door positioning, minimum areas, proportions, door widths, and bathroom privacy
 - **Scoring System**: 0-1 score based on errors (0.25 penalty) and warnings (0.05 penalty)
-- **REST API**: Validate, score, render SVG, and batch evaluate plans
-- **MCP Server**: Authoring tools for building plans step-by-step with automatic validation
-- **Web UI**: Interactive editor with 2D visualization, reviewer interface, and batch evaluation
 - **25 Seed Plans**: Test cases covering all rules and edge cases
+
+### Visualization & Export
+- **2D SVG Rendering**: Clean vector graphics with violation highlighting
+- **3D GLB Export**: Generate binary glTF models with rooms, walls, doors, and windows
 - **Share Links**: Encode plans in URL fragments for easy sharing
+
+### Interfaces
+- **REST API**: Validate, score, render SVG/GLB, and batch evaluate plans
+- **MCP Server**: 12 tools for building plans step-by-step with automatic validation
+- **Web UI**: Interactive editor with 2D/3D views, batch evaluation, and documentation
+
+### Batch Processing
+- Evaluate up to 50 plans in a single API call
+- Aggregate pass rates and violation statistics
+- Export results as JSON reports
 
 ## Quick Start
 
@@ -51,6 +64,8 @@ vercel --prod
 
 ## API Endpoints
 
+Base URL: `https://floors-sigma.vercel.app`
+
 ### Read Operations
 
 - `GET /api/health` - Health check
@@ -59,13 +74,14 @@ vercel --prod
 - `GET /api/seeds/{id}` - Get one seed plan
 - `POST /api/validate` - Validate a plan (returns violations)
 - `POST /api/score` - Score a plan (returns score + violations)
-- `POST /api/render` - Render plan as SVG
+- `POST /api/render` - Render plan as 2D SVG
+- `POST /api/render3d` - Render plan as 3D GLB (base64-encoded)
 - `POST /api/eval` - Batch evaluate up to 50 plans
 
-### Example
+### Example: Score a Plan
 
 ```bash
-curl -X POST http://localhost:8000/api/score \
+curl -X POST https://floors-sigma.vercel.app/api/score \
   -H "Content-Type: application/json" \
   -d '{
     "schema_version": "1.0",
@@ -88,42 +104,93 @@ Response:
 {
   "passed": true,
   "score": 1.0,
+  "errors": null,
+  "warnings": null,
   "breakdown": {},
   "violations": []
 }
 ```
 
+### Example: Export 3D Model
+
+```bash
+curl -X POST https://floors-sigma.vercel.app/api/render3d \
+  -H "Content-Type: application/json" \
+  -d '{...plan JSON...}' \
+  | jq -r .glb | base64 -d > plan.glb
+```
+
+The GLB file can be opened in:
+- **Blender** (File → Import → glTF 2.0)
+- **Windows 3D Viewer** (drag and drop)
+- **Web viewers** (three.js, Babylon.js, model-viewer)
+- **macOS Preview** (Quick Look)
+
 ## MCP Server
 
-Connect an MCP client to build plans interactively:
+Connect an MCP client to build plans interactively with real-time validation.
 
-### Tools (11 total)
+**Endpoint:** `https://floors-sigma.vercel.app/mcp/`
+
+### Tools (12 total)
 
 **Read Tools:**
-- `get_schema` - Learn the plan format
+- `get_schema_tool` - Learn the plan format and validation rules
 - `validate_floorplan` - Check for violations
 - `score_floorplan` - Get score and breakdown
-- `render_floorplan_svg` - Visualize the plan
+- `render_floorplan_svg` - Visualize the plan as 2D SVG
+- `render_3d_model` - Generate 3D GLB model (base64-encoded)
 - `run_eval` - Batch evaluate multiple plans
 
 **Authoring Tools:**
-- `new_floorplan` - Create empty plan
-- `add_room` - Add a room (absolute or relative positioning)
-- `connect_rooms` - Add door between adjacent rooms
-- `add_opening` - Add window or exterior door
-- `update_room` - Modify room properties
-- `remove_element` - Remove room/door/window
+- `new_floorplan_tool` - Create empty plan
+- `add_room_tool` - Add a room (absolute or relative positioning)
+- `connect_rooms_tool` - Add door between adjacent rooms
+- `add_opening_tool` - Add window or exterior door
+- `update_room_tool` - Modify room properties
+- `remove_element_tool` - Remove room/door/window
+
+All authoring tools automatically validate the plan after each operation and return the updated plan with score and violations.
 
 ### MCP Client Configuration
 
 ```json
 {
   "mcpServers": {
-    "floor-plan-checker": {
-      "url": "https://your-deployment.vercel.app/mcp"
+    "floors": {
+      "url": "https://floors-sigma.vercel.app/mcp/"
     }
   }
 }
+```
+
+### Example: Building a Plan via MCP
+
+```python
+# 1. Create empty plan
+plan = new_floorplan_tool(id="my_apartment")
+
+# 2. Add rooms
+plan = add_room_tool(plan, type="living", name="Living Room", w=5, h=4, x=0, y=0)
+plan = add_room_tool(plan, type="bedroom", name="Bedroom", w=4, h=4, relative_to="living", side="E")
+
+# 3. Connect rooms with doors
+plan = connect_rooms_tool(plan, a="living", b="bedroom", width=0.9)
+
+# 4. Add exterior door
+plan = add_opening_tool(plan, kind="door", room="living", wall="S", width=1.0)
+
+# 5. Add windows
+plan = add_opening_tool(plan, kind="window", room="living", wall="N", width=1.5)
+plan = add_opening_tool(plan, kind="window", room="bedroom", wall="N", width=1.2)
+
+# 6. Check final score
+result = score_floorplan(plan)
+print(f"Score: {result['score']}, Passed: {result['passed']}")
+
+# 7. Export 3D model
+glb_data = render_3d_model(plan)
+# Save base64-decoded GLB to file
 ```
 
 ### Local MCP (stdio)
@@ -187,18 +254,20 @@ floors/
 │   ├── geometry.py        # Rectangle operations
 │   ├── rules.py           # 10 validation rules
 │   ├── score.py           # Scoring + evaluation
-│   ├── svg.py             # SVG rendering
+│   ├── svg.py             # 2D SVG rendering
+│   ├── render3d.py        # 3D GLB rendering
 │   ├── ops.py             # Authoring operations
 │   └── share.py           # Encode/decode plans
 ├── mcp_server/            # MCP tool definitions
-│   ├── app.py             # 11 MCP tools
+│   ├── app.py             # 12 MCP tools
 │   └── __main__.py        # stdio entrypoint
 ├── public/                # Static web UI
 │   ├── index.html
 │   ├── css/style.css
-│   └── js/app.js
+│   ├── js/app.js
+│   └── js/viewer3d.js     # Three.js 3D viewer
 ├── data/seeds/            # 25 test plans
-├── tests/                 # pytest suite (44 tests)
+├── tests/                 # pytest suite (52 tests)
 ├── vercel.json            # Deployment config
 └── DECISIONS.md           # Design decisions
 ```
@@ -223,8 +292,10 @@ uv run pytest tests/test_rules.py::test_r01_no_overlap -v
 
 1. **LLM Evaluation**: Generate floor plans with an LLM, validate them, measure pass rates
 2. **Design Assistance**: Build plans interactively via MCP with real-time feedback
-3. **Dataset Curation**: Use seed plans as training data or benchmarks
-4. **Rule Exploration**: Understand architectural constraints through violation messages
+3. **3D Visualization**: Export GLB models for review in Blender, 3D viewers, or AR applications
+4. **Dataset Curation**: Use seed plans as training data or benchmarks
+5. **Rule Exploration**: Understand architectural constraints through violation messages
+6. **Batch Testing**: Evaluate multiple plans at once to compare designs or test model outputs
 
 ## Limitations
 
