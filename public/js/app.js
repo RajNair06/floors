@@ -323,7 +323,7 @@ document.getElementById("btn-share").addEventListener("click", () => {
   try {
     const plan = JSON.parse(text);
     const encoded = encodePlan(plan);
-    const url = `${window.location.origin}${window.location.pathname}#plan=${encoded}`;
+    const url = `${window.location.origin}/index.html#plan=${encoded}`;
     navigator.clipboard.writeText(url);
     alert("Share link copied to clipboard!");
   } catch (e) {
@@ -340,26 +340,58 @@ function encodePlan(plan) {
 }
 
 function decodePlanFragment(fragment) {
+  // Try plain base64 first (browser share button encoding).
   try {
-    return JSON.parse(decodeURIComponent(escape(atob(fragment))));
+    return { plan: JSON.parse(decodeURIComponent(escape(atob(fragment)))) };
   } catch {
-    return null;
+    // Fall through to zlib + base64url (MCP server encoding).
+  }
+  // Try zlib-compressed base64url — returns a Promise.
+  try {
+    let b64 = fragment.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = (4 - b64.length % 4) % 4;
+    if (padding) b64 += "=".repeat(padding);
+    const binary = atob(b64);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const ds = new DecompressionStream("deflate");
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const reader = ds.readable.getReader();
+    const chunks = [];
+    const readAll = () =>
+      reader.read().then(({ done, value }) => {
+        if (done) {
+          const decoded = new TextDecoder().decode(
+            new Uint8Array(chunks.reduce((acc, c) => [...acc, ...c], []))
+          );
+          return { plan: JSON.parse(decoded) };
+        }
+        chunks.push(value);
+        return readAll();
+      });
+    return readAll().catch(() => ({ plan: null }));
+  } catch {
+    return { plan: null };
   }
 }
 
-function checkHash() {
+async function checkHash() {
   const hash = window.location.hash;
   if (hash.startsWith("#plan=")) {
     const encoded = hash.slice(6);
-    const plan = decodePlanFragment(encoded);
+    const result = decodePlanFragment(encoded);
+    // result can be a plain object or a Promise.
+    const { plan } = result instanceof Promise ? await result : result;
     if (plan) {
       editor.value = JSON.stringify(plan, null, 2);
       scorePlan();
-      // Navigate to editor so user sees the loaded plan
       navigateTo("editor");
     } else {
       showSchemaError("Could not decode plan from URL. It may be corrupt.");
     }
+  }
+}
   }
 }
 

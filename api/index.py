@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 
 from core import get_schema, render_svg
 from core.config import MAX_BATCH_SIZE
@@ -187,9 +187,3 @@ async def seeds_detail(seed_id: str):
             plan = {k: v for k, v in s.items() if k != "expected_failures"}
             return plan
     raise HTTPException(status_code=404, detail="Seed not found")
-
-
-@app.get("/")
-async def root():
-    """Redirect to the static index.html."""
-    return RedirectResponse(url="/index.html")

@@ -21,7 +21,7 @@ def test_encode_decode_roundtrip():
 def test_viewer_url():
     plan = {"id": "test", "rooms": []}
     url = viewer_url(plan, "https://example.com")
-    assert url.startswith("https://example.com#plan=")
+    assert url.startswith("https://example.com/index.html#plan=")
     # Extract the encoded part and decode.
     encoded = url.split("#plan=")[1]
     decoded = decode_plan(encoded)

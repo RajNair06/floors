@@ -40,4 +40,6 @@ def decode_plan(s: str) -> dict:
 def viewer_url(plan_dict: dict, base_url: str = "http://localhost:3000") -> str:
     """Build a URL that opens the plan in the viewer."""
     encoded = encode_plan(plan_dict)
-    return f"{base_url}#plan={encoded}"
+    # Strip trailing slash from base_url, then use /index.html to avoid redirects.
+    base = base_url.rstrip("/")
+    return f"{base}/index.html#plan={encoded}"
