@@ -201,20 +201,26 @@ uv run python -m mcp_server
 
 ## Validation Rules
 
-| ID  | Rule                              | Severity |
-|-----|-----------------------------------|----------|
-| R01 | No room overlap                   | error    |
-| R02 | Has entrance (exterior door)      | error    |
-| R03 | All rooms reachable               | error    |
-| R04 | Habitable rooms have windows      | error    |
-| R05 | Doors on shared/exterior walls    | error    |
-| R06 | Windows on exterior walls only    | error    |
-| R07 | Minimum room areas                | warning  |
-| R08 | Plausible proportions (4:1 max)   | warning  |
-| R09 | Door widths (0.7-1.2m)            | warning  |
-| R10 | Bathroom privacy                  | warning  |
+The system checks floor plans against 10 design rules. **Errors** mean the plan cannot work. **Warnings** mean the plan works but has design issues.
 
-See `DECISIONS.md` for rule thresholds and assumptions.
+| ID  | Rule | Severity | What It Checks |
+|-----|------|----------|----------------|
+| R01 | **No room overlap** | error | Rooms must not intersect. Tolerance: 0.05m. Adjacent rooms may share walls exactly. |
+| R02 | **Has entrance** | error | Plan must have at least one exterior door (door to "outside"). |
+| R03 | **All rooms reachable** | error | Every room must be reachable from the entrance via interior doors. Uses flood-fill algorithm. |
+| R04 | **Windows in habitable rooms** | error | Living, bedroom, dining, study, and kitchen rooms must have at least one window. Bathrooms, hallways, utility, and storage are exempt. |
+| R05 | **Doors on walls** | error | Interior doors must be on shared walls between two rooms. Exterior doors must be on exterior walls. Door position must fit within wall bounds. |
+| R06 | **Windows on exterior walls** | error | Windows can only be placed on exterior walls (walls not shared with another room). Window position must fit within wall bounds. |
+| R07 | **Minimum room areas** | warning | Living: ≥12m², Bedroom: ≥7m², Kitchen: ≥5m², Dining: ≥6m², Bathroom: ≥3m², Hallway: ≥3m², Study: ≥5m², Utility: ≥3m², Storage: ≥2m² |
+| R08 | **Plausible proportions** | warning | Room aspect ratio (longer side / shorter side) must be ≤4:1. Prevents impossibly narrow rooms. |
+| R09 | **Door widths** | warning | All doors must be 0.7m–1.2m wide. Narrower doors are impractical; wider doors are unusual. |
+| R10 | **Bathroom privacy** | warning | Bathrooms should not have direct doors to kitchens or dining rooms. Prefer hallway or bedroom access. |
+
+**Scoring formula:** `score = max(0, 1 - 0.25 * error_count - 0.05 * warning_count)`
+
+A plan with 0 errors and 0 warnings scores 1.0. A plan with 2 errors scores 0.5. A plan with 4+ errors scores 0.
+
+See `DECISIONS.md` for rule thresholds, rationale, and edge cases.
 
 ## Plan Format
 
