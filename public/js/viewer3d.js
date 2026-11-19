@@ -359,6 +359,8 @@ export class FloorPlan3D {
   }
 
   _addDoor(door, fromRoom, ceilingHeight, cx, cz) {
+    // px, pz are the top-left corner of the room in 3D coordinates.
+    // px = mapX(fromRoom.x) = left edge, pz = mapZ(fromRoom.y) = top edge (large z).
     const px = this._mapX(fromRoom.x, cx);
     const pz = this._mapZ(fromRoom.y, cz);
     const isExterior = door.to === "outside";
@@ -368,30 +370,35 @@ export class FloorPlan3D {
     let dx, dz, dw, dd;
 
     // offset is distance from wall start (left end for N/S, top end for E/W).
+    // Top end (small y) maps to large z; bottom end (large y) maps to small z.
     switch (door.wall) {
       case "N":
-        // N wall in 2D = top edge = negative z in 3D.
+        // N wall = top edge in 2D (y = fromRoom.y) → z = pz.
         dx = px + door.offset + door.width / 2;
-        dz = pz + fromRoom.h / 2;
+        dz = pz;
         dw = door.width;
         dd = WALL_THICKNESS + 0.02;
         break;
       case "S":
+        // S wall = bottom edge in 2D (y = fromRoom.y + fromRoom.h) → z = pz - fromRoom.h.
         dx = px + door.offset + door.width / 2;
-        dz = pz - fromRoom.h / 2;
+        dz = pz - fromRoom.h;
         dw = door.width;
         dd = WALL_THICKNESS + 0.02;
         break;
       case "W":
-        // W wall in 2D = left edge = negative x.
-        dx = px - fromRoom.w / 2;
-        dz = pz - (door.offset + door.width / 2 - fromRoom.h / 2);
+        // W wall = left edge in 2D (x = fromRoom.x) → x = px.
+        // offset runs from top (pz) to bottom (pz - fromRoom.h).
+        dx = px;
+        dz = pz - door.offset - door.width / 2;
         dw = WALL_THICKNESS + 0.02;
         dd = door.width;
         break;
       case "E":
-        dx = px + fromRoom.w / 2;
-        dz = pz - (door.offset + door.width / 2 - fromRoom.h / 2);
+        // E wall = right edge in 2D (x = fromRoom.x + fromRoom.w) → x = px + fromRoom.w.
+        // offset runs from top (pz) to bottom (pz - fromRoom.h).
+        dx = px + fromRoom.w;
+        dz = pz - door.offset - door.width / 2;
         dw = WALL_THICKNESS + 0.02;
         dd = door.width;
         break;
@@ -409,6 +416,7 @@ export class FloorPlan3D {
   }
 
   _addWindow(win, room, ceilingHeight, cx, cz) {
+    // px, pz are the top-left corner of the room in 3D coordinates.
     const px = this._mapX(room.x, cx);
     const pz = this._mapZ(room.y, cz);
 
@@ -419,26 +427,30 @@ export class FloorPlan3D {
 
     switch (win.wall) {
       case "N":
+        // N wall = top edge (y = room.y) → z = pz.
         wx = px + win.offset + win.width / 2;
-        wz = pz + room.h / 2;
+        wz = pz;
         ww = win.width;
         wd = WALL_THICKNESS + 0.03;
         break;
       case "S":
+        // S wall = bottom edge (y = room.y + room.h) → z = pz - room.h.
         wx = px + win.offset + win.width / 2;
-        wz = pz - room.h / 2;
+        wz = pz - room.h;
         ww = win.width;
         wd = WALL_THICKNESS + 0.03;
         break;
       case "W":
-        wx = px - room.w / 2;
-        wz = pz - (win.offset + win.width / 2 - room.h / 2);
+        // W wall = left edge (x = room.x) → x = px.
+        wx = px;
+        wz = pz - win.offset - win.width / 2;
         ww = WALL_THICKNESS + 0.03;
         wd = win.width;
         break;
       case "E":
-        wx = px + room.w / 2;
-        wz = pz - (win.offset + win.width / 2 - room.h / 2);
+        // E wall = right edge (x = room.x + room.w) → x = px + room.w.
+        wx = px + room.w;
+        wz = pz - win.offset - win.width / 2;
         ww = WALL_THICKNESS + 0.03;
         wd = win.width;
         break;
