@@ -240,7 +240,7 @@ def r07_min_area(plan: Plan) -> list[Violation]:
                     rule="R07",
                     severity="warning",
                     room_ids=[room.id],
-                    message=f"'{room.name}' ({room.type}) is {area:.1f} m² — below the {minimum:.1f} m² minimum.",
+                    message=f"'{room.name}' is {area:.1f} m² — below the {minimum:.1f} m² minimum.",
                     suggested_fix=f"Enlarge '{room.name}' to at least {minimum:.1f} m².",
                     region=room_rect(room),
                 )
@@ -368,7 +368,7 @@ def r10_bathroom_privacy(plan: Plan) -> list[Violation]:
                         rule="R10",
                         severity="warning",
                         room_ids=[bathroom.id, other.id],
-                        message=f"'{bathroom.name}' opens directly into '{other.name}' ({other.type}).",
+                        message=f"'{bathroom.name}' opens directly into '{other.name}'.",
                         suggested_fix=f"Route the door to '{bathroom.name}' through a hallway or bedroom instead of '{other.name}'.",
                         region=room_rect(bathroom),
                     )
