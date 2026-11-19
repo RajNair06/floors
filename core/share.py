@@ -16,7 +16,9 @@ from core.config import MAX_ENCODED_LENGTH
 def encode_plan(plan_dict: dict) -> str:
     """Encode a plan dict to a compact base64url string."""
     raw = json.dumps(plan_dict, separators=(",", ":"))
-    compressed = zlib.compress(raw.encode("utf-8"))
+    # Use raw deflate (wbits=-15) for browser DecompressionStream compatibility
+    compressor = zlib.compressobj(level=9, wbits=-15)
+    compressed = compressor.compress(raw.encode("utf-8")) + compressor.flush()
     encoded = base64.urlsafe_b64encode(compressed).decode("ascii")
     if len(encoded) > MAX_ENCODED_LENGTH:
         raise ValueError(
@@ -33,7 +35,11 @@ def decode_plan(s: str) -> dict:
     if padding != 4:
         s += "=" * padding
     compressed = base64.urlsafe_b64decode(s)
-    raw = zlib.decompress(compressed)
+    # Try raw deflate first (wbits=-15), fall back to zlib format (wbits=15)
+    try:
+        raw = zlib.decompress(compressed, wbits=-15)
+    except zlib.error:
+        raw = zlib.decompress(compressed)
     return json.loads(raw)
 
 
