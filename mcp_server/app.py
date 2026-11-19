@@ -6,7 +6,6 @@ Uses MCP SDK v2 (MCPServer, formerly FastMCP).
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 
 from mcp.server import MCPServer
@@ -23,19 +22,8 @@ from core.ops import (
 from core.rules import RULE_CATALOGUE
 from core.schema import parse_plan, plan_to_dict
 from core.score import evaluate, score, validate
-from core.share import viewer_url
 
 mcp = MCPServer("Floors", version="0.1.0")
-
-
-def _base_url() -> str:
-    """Get the viewer base URL."""
-    vercel_url = os.environ.get("VERCEL_URL", "")
-    if vercel_url:
-        if not vercel_url.startswith("http"):
-            vercel_url = f"https://{vercel_url}"
-        return vercel_url
-    return "http://localhost:3000"
 
 
 def _strip_ids(result_dict: dict) -> dict:
@@ -47,7 +35,7 @@ def _strip_ids(result_dict: dict) -> dict:
 
 
 def _wrap_result(plan):
-    """Wrap a plan with score and viewer URL."""
+    """Wrap a plan with score and validation results."""
     # Re-parse to catch any schema errors introduced by the operation
     plan_dict = plan_to_dict(plan)
     try:
@@ -57,27 +45,14 @@ def _wrap_result(plan):
         return {"error": detail}
     
     score_result = score(plan)
-    base = _base_url()
-    try:
-        return {
-            "plan": plan_dict,
-            "passed": score_result.passed,
-            "score": score_result.score,
-            "errors": score_result.errors,
-            "warnings": score_result.warnings,
-            "violations": [v.model_dump() for v in score_result.violations],
-            "viewer_url": viewer_url(plan_dict, base),
-        }
-    except ValueError:
-        return {
-            "plan": plan_dict,
-            "passed": score_result.passed,
-            "score": score_result.score,
-            "errors": score_result.errors,
-            "warnings": score_result.warnings,
-            "violations": [v.model_dump() for v in score_result.violations],
-            "viewer_url": None,
-        }
+    return {
+        "plan": plan_dict,
+        "passed": score_result.passed,
+        "score": score_result.score,
+        "errors": score_result.errors,
+        "warnings": score_result.warnings,
+        "violations": [v.model_dump() for v in score_result.violations],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -169,8 +144,6 @@ def score_floorplan(plan: dict) -> dict:
       warnings: array of warning strings or null
       breakdown: dict of {rule_name: count} showing which rules fired
       violations: full violation details (same as validate_floorplan)
-      viewer_url: a URL that opens the plan in a browser with violations highlighted.
-                  Share this with users to visualize the plan.
 
     Use score_floorplan when you need a single number to compare plans.
     Use validate_floorplan when you only need to know what to fix.
@@ -182,11 +155,6 @@ def score_floorplan(plan: dict) -> dict:
         return {"error": detail}
     result = score(p)
     plan_dict = plan_to_dict(p)
-    base = _base_url()
-    try:
-        url = viewer_url(plan_dict, base)
-    except ValueError:
-        url = None
     return {
         "plan": plan_dict,
         "passed": result.passed,
@@ -195,7 +163,6 @@ def score_floorplan(plan: dict) -> dict:
         "warnings": result.warnings,
         "breakdown": result.breakdown,
         "violations": [v.model_dump() for v in result.violations],
-        "viewer_url": url,
     }
 
 
@@ -293,7 +260,6 @@ def new_floorplan_tool(
       errors: null
       warnings: null
       violations: []
-      viewer_url: URL to view in browser
 
     Next step: Call add_room_tool to add the first room.
     """
@@ -336,7 +302,7 @@ def add_room_tool(
       x, y: Absolute position (use instead of relative_to/side)
       relative_to, side: Relative position (use instead of x/y)
 
-    Returns the updated plan with score, errors, warnings, and viewer_url.
+    Returns the updated plan with score, errors, and warnings.
 
     Important:
     - Rooms must not overlap. If two rooms overlap, validation will report an error.
@@ -369,7 +335,7 @@ def connect_rooms_tool(
       b: ID of the second room
       width: Door width in metres (default 0.9, valid range 0.7–1.2)
 
-    Returns the updated plan with score, errors, warnings, and viewer_url.
+    Returns the updated plan with score, errors, and warnings.
 
     Errors if:
     - The two rooms do not share a wall. Fix: place them adjacent using
@@ -414,7 +380,7 @@ def add_opening_tool(
       offset: Position along the wall in metres from the start of the wall.
               If omitted, the opening is centred on the wall.
 
-    Returns the updated plan with score, errors, warnings, and viewer_url.
+    Returns the updated plan with score, errors, and warnings.
 
     Errors if:
     - The specified wall is interior (shared with another room).
@@ -461,7 +427,7 @@ def update_room_tool(
       w: New width in metres
       h: New height in metres
 
-    Returns the updated plan with score, errors, warnings, and viewer_url.
+    Returns the updated plan with score, errors, and warnings.
 
     Common uses:
     - Fix "room too small" warning: increase w and/or h
@@ -501,7 +467,7 @@ def remove_element_tool(plan: dict, id: str) -> dict:
       plan: The current floor plan
       id: The ID of the room, door, or window to remove
 
-    Returns the updated plan with score, errors, warnings, and viewer_url.
+    Returns the updated plan with score, errors, and warnings.
 
     Errors if the ID does not exist in the plan.
 

@@ -15,7 +15,6 @@ from core.config import MAX_BATCH_SIZE
 from core.rules import RULE_CATALOGUE
 from core.schema import EvalReport, Plan, ScoreResult, Violation, parse_plan, plan_to_dict
 from core.score import evaluate, score, validate
-from core.share import viewer_url
 
 
 # ---------------------------------------------------------------------------
