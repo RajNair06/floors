@@ -109,8 +109,8 @@ async def validate_route(request: Request):
         return JSONResponse(status_code=422, content=detail)
     violations = validate(plan)
     passed = all(v.severity != "error" for v in violations)
-    errors = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"] or None
-    warnings = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"] or None
+    errors = [v.message for v in violations if v.severity == "error"] or None
+    warnings = [v.message for v in violations if v.severity == "warning"] or None
     return {"passed": passed, "errors": errors, "warnings": warnings, "violations": [v.model_dump() for v in violations]}
 
 

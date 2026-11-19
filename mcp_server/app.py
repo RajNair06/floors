@@ -25,7 +25,7 @@ from core.schema import parse_plan, plan_to_dict
 from core.score import evaluate, score, validate
 from core.share import viewer_url
 
-mcp = MCPServer("Floor-Plan Checker", version="0.1.0")
+mcp = MCPServer("Floors", version="0.1.0")
 
 
 def _base_url() -> str:
@@ -36,6 +36,14 @@ def _base_url() -> str:
             vercel_url = f"https://{vercel_url}"
         return vercel_url
     return "http://localhost:3000"
+
+
+def _strip_ids(result_dict: dict) -> dict:
+    """Strip internal rule IDs from violations for cleaner agent output."""
+    if "violations" in result_dict:
+        for v in result_dict["violations"]:
+            v.pop("rule", None)
+    return result_dict
 
 
 def _wrap_result(plan):
@@ -54,7 +62,6 @@ def _wrap_result(plan):
             "viewer_url": viewer_url(plan_dict, base),
         }
     except ValueError:
-        # Plan too large to encode; omit viewer_url.
         return {
             "plan": plan_dict,
             "passed": score_result.passed,
@@ -71,21 +78,58 @@ def _wrap_result(plan):
 # ---------------------------------------------------------------------------
 @mcp.tool(annotations={"readOnlyHint": True})
 def get_schema_tool() -> dict:
-    """Get the JSON Schema for floor plans, plus the rule catalogue.
+    """Get the complete JSON Schema for floor plans and the validation rule catalogue.
 
-    Call this first to learn the plan format before generating one.
-    Returns: {"schema": {...}, "rules": [...]}
+    CALL THIS FIRST before generating or modifying any plan. It tells you:
+    - The exact JSON structure a plan must follow (rooms, doors, windows arrays)
+    - Every field name, type, and constraint
+    - Valid room types: living, kitchen, dining, bedroom, bathroom, hallway, study, utility, storage
+    - Valid wall sides: N (top), S (bottom), E (right), W (left)
+    - The 10 validation rules with severity (error vs warning) and description
+
+    Returns:
+      schema: Full JSON Schema object for plan validation
+      rules: Array of {severity, description} for each validation rule
+
+    Coordinate system: origin (0,0) is top-left. X grows right, Y grows down.
+    Rooms are axis-aligned rectangles defined by (x, y, w, h) in metres.
     """
-    return {"schema": get_schema(), "rules": RULE_CATALOGUE}
+    return {"schema": get_schema(), "rules": [{"severity": r["severity"], "description": r["description"]} for r in RULE_CATALOGUE]}
 
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def validate_floorplan(plan: dict) -> dict:
-    """Validate a floor plan and return structured violations.
+    """Check a floor plan against all validation rules and return every problem found.
 
-    The repair-loop workhorse. Returns passed (bool) and violations with
-    suggested fixes and regions. A schema-invalid plan returns an error
-    with path and message details so you can correct and retry.
+    This is the main tool for the repair loop: generate a plan, validate it,
+    read the errors, fix them, validate again until passed=true.
+
+    Input:
+      plan: A floor plan JSON object (see get_schema_tool for the exact format)
+
+    Returns on valid plan:
+      passed: true if no errors exist (warnings alone still pass)
+      errors: array of human-readable error strings, or null if none.
+              Errors mean the plan cannot work (overlap, no entrance, unreachable rooms, etc.)
+      warnings: array of human-readable warning strings, or null if none.
+                Warnings mean the plan works but has design issues (small rooms, bad proportions, etc.)
+      violations: array of detailed violation objects, each containing:
+        severity: "error" or "warning"
+        message: human-readable description of the problem
+        suggested_fix: specific action to resolve the issue
+        room_ids: array of room IDs involved
+        region: {x, y, w, h} rectangle for SVG highlighting
+
+    Returns on invalid plan (malformed JSON structure):
+      error: {error: "schema", details: [{path, message}, ...]}
+      Use the path and message to fix the structure, then retry.
+
+    Workflow:
+      1. Generate or receive a plan
+      2. Call validate_floorplan
+      3. If errors exist, read each message and suggested_fix
+      4. Use update_room_tool, add_opening_tool, etc. to fix issues
+      5. Re-validate until passed=true and errors=null
     """
     try:
         p = parse_plan(plan)
@@ -94,17 +138,35 @@ def validate_floorplan(plan: dict) -> dict:
         return {"error": detail}
     violations = validate(p)
     passed = all(v.severity != "error" for v in violations)
-    errors = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"] or None
-    warnings = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"] or None
+    errors = [v.message for v in violations if v.severity == "error"] or None
+    warnings = [v.message for v in violations if v.severity == "warning"] or None
     return {"passed": passed, "errors": errors, "warnings": warnings, "violations": [v.model_dump() for v in violations]}
 
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def score_floorplan(plan: dict) -> dict:
-    """Score a floor plan: returns passed, score (0-1), per-rule breakdown, and violations.
+    """Score a floor plan from 0.0 (worst) to 1.0 (perfect) with full detail.
 
-    Use for ranking and progress tracking. Also returns a viewer_url that
-    opens the plan in a browser with violations highlighted.
+    Use this to rank plans, track improvement across repair iterations, or
+    compare different designs. The score formula is:
+      score = max(0, 1 - 0.25 * error_count - 0.05 * warning_count)
+
+    Input:
+      plan: A floor plan JSON object
+
+    Returns:
+      plan: The validated plan (echoed back)
+      passed: true if no errors (same as validate_floorplan)
+      score: float from 0.0 to 1.0
+      errors: array of error strings or null
+      warnings: array of warning strings or null
+      breakdown: dict of {rule_name: count} showing which rules fired
+      violations: full violation details (same as validate_floorplan)
+      viewer_url: a URL that opens the plan in a browser with violations highlighted.
+                  Share this with users to visualize the plan.
+
+    Use score_floorplan when you need a single number to compare plans.
+    Use validate_floorplan when you only need to know what to fix.
     """
     try:
         p = parse_plan(plan)
@@ -132,9 +194,20 @@ def score_floorplan(plan: dict) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def render_floorplan_svg(plan: dict) -> dict:
-    """Render a floor plan to SVG with violation regions overlaid.
+    """Render a floor plan as an SVG image with violation regions highlighted.
 
-    Returns an SVG string that a multimodal agent can inspect.
+    Use this when you need a visual representation of the plan. The SVG shows:
+    - Each room as a labelled rectangle with its name and dimensions
+    - Doors as gaps in walls between rooms or on exterior walls
+    - Windows as marks on walls
+    - Violation regions highlighted in red (errors) or yellow (warnings)
+
+    Input:
+      plan: A floor plan JSON object
+
+    Returns:
+      svg: A complete SVG string that can be displayed as an image.
+           Multimodal agents can analyze this image to understand the layout.
     """
     try:
         p = parse_plan(plan)
@@ -148,10 +221,31 @@ def render_floorplan_svg(plan: dict) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def run_eval(plans: list[dict]) -> dict:
-    """Batch evaluate up to 50 plans.
+    """Batch evaluate up to 50 floor plans at once and return aggregate statistics.
 
-    Returns pass_rate, mean_score, per_rule failure counts, and per-plan results.
-    Use to compare models or prompts on a batch of plans.
+    Use this to compare multiple plans, test a prompt or model across many examples,
+    or measure improvement over iterations.
+
+    Input:
+      plans: Array of up to 50 floor plan JSON objects
+
+    Returns:
+      n: number of plans evaluated
+      pass_rate: fraction of plans that passed (0.0 to 1.0)
+      mean_score: average score across all plans (0.0 to 1.0)
+      per_rule: dict of {rule_name: count} showing how many plans triggered each rule
+      results: array of per-plan objects, each containing:
+        plan_id: the plan's id field
+        passed: true/false
+        score: 0.0 to 1.0
+        errors: array of error strings or null
+        warnings: array of warning strings or null
+        breakdown: per-rule counts for this plan
+        violations: full violation details
+
+    If any plan has a schema error, returns:
+      {error: "schema", plan_index: N, details: [...]}
+      Fix the plan at index N and retry.
     """
     if len(plans) > 50:
         return {"error": "Batch too large. Maximum is 50 plans."}
@@ -175,9 +269,26 @@ def new_floorplan_tool(
     ceiling_height: float = 2.7,
     id: str = "plan_new",
 ) -> dict:
-    """Create an empty floor plan.
+    """Create a new empty floor plan ready for rooms to be added.
 
-    Returns an empty valid plan that you can add rooms to with add_room_tool.
+    This is always the first step when building a plan from scratch.
+    The returned plan has empty rooms, doors, and windows arrays.
+
+    Input:
+      units: Must be "m" (metres). Other units are not supported.
+      ceiling_height: Default ceiling height in metres (used for 3D view only, default 2.7)
+      id: A unique identifier for this plan (default "plan_new")
+
+    Returns:
+      plan: The empty plan object
+      passed: true (empty plan has no violations)
+      score: 1.0
+      errors: null
+      warnings: null
+      violations: []
+      viewer_url: URL to view in browser
+
+    Next step: Call add_room_tool to add the first room.
     """
     plan = new_floorplan(id=id, units=units, ceiling_height=ceiling_height)
     return _wrap_result(plan)
@@ -195,11 +306,35 @@ def add_room_tool(
     relative_to: str | None = None,
     side: str | None = None,
 ) -> dict:
-    """Add a room to a plan.
+    """Add a rectangular room to a floor plan.
 
-    With relative_to and side (N/S/E/W), the room snaps flush against that
-    neighbour so edges touch exactly. With x and y, placed at absolute coords.
-    Valid types: living, kitchen, dining, bedroom, bathroom, hallway, study, utility, storage.
+    Two placement modes:
+    1. RELATIVE placement (recommended for most cases):
+       - relative_to: ID of an existing room to snap against
+       - side: which side of that room — "N" (above), "S" (below), "E" (right), "W" (left)
+       - The new room's edge aligns exactly with the neighbour's edge so they share a wall
+       - Example: relative_to="r1", side="E" places the new room to the right of room r1
+
+    2. ABSOLUTE placement:
+       - x: left edge coordinate in metres
+       - y: top edge coordinate in metres
+       - Use this when you need precise control over room position
+
+    Input:
+      plan: The current floor plan (pass the plan returned by previous tool calls)
+      type: Room type — one of: living, kitchen, dining, bedroom, bathroom, hallway, study, utility, storage
+      name: Human-readable name (e.g. "Master Bedroom", "Kitchen")
+      w: Width in metres (must be positive)
+      h: Height in metres (must be positive)
+      x, y: Absolute position (use instead of relative_to/side)
+      relative_to, side: Relative position (use instead of x/y)
+
+    Returns the updated plan with score, errors, warnings, and viewer_url.
+
+    Important:
+    - Rooms must not overlap. If two rooms overlap, validation will report an error.
+    - Rooms that share a wall (edges touch exactly) can be connected with connect_rooms_tool.
+    - Minimum areas by type: bedroom 7m², living 10m², kitchen 4m², bathroom 2.5m², study 5m².
     """
     try:
         p = parse_plan(plan)
@@ -218,8 +353,26 @@ def connect_rooms_tool(
 ) -> dict:
     """Add a door between two rooms that share a wall.
 
-    Finds the shared wall segment and places a door at its midpoint.
-    Errors if the rooms share no wall — place them with relative_to first.
+    The tool automatically finds the shared wall segment and places the door
+    at its midpoint. The door width defaults to 0.9m (standard interior door).
+
+    Input:
+      plan: The current floor plan
+      a: ID of the first room
+      b: ID of the second room
+      width: Door width in metres (default 0.9, valid range 0.7–1.2)
+
+    Returns the updated plan with score, errors, warnings, and viewer_url.
+
+    Errors if:
+    - The two rooms do not share a wall. Fix: place them adjacent using
+      add_room_tool with relative_to before connecting.
+    - Either room ID does not exist.
+
+    Important:
+    - This tool only creates interior doors (room-to-room).
+    - For exterior doors (to outside), use add_opening_tool with kind="entrance".
+    - A plan must have at least one exterior door to pass validation.
     """
     try:
         p = parse_plan(plan)
@@ -240,8 +393,32 @@ def add_opening_tool(
 ) -> dict:
     """Add a window or an exterior door to a room.
 
-    kind: 'window' or 'entrance'. Centred on the wall by default.
-    The wall must be N, S, E, or W.
+    This tool is for openings that face outside — windows on exterior walls
+    and exterior doors (entrances). For interior doors between rooms,
+    use connect_rooms_tool instead.
+
+    Input:
+      plan: The current floor plan
+      kind: "window" or "entrance"
+      room: ID of the room to add the opening to
+      wall: Which wall — "N" (top), "S" (bottom), "E" (right), "W" (left)
+            The wall must be an exterior wall (not shared with another room).
+      width: Opening width in metres (default 1.0)
+      offset: Position along the wall in metres from the start of the wall.
+              If omitted, the opening is centred on the wall.
+
+    Returns the updated plan with score, errors, warnings, and viewer_url.
+
+    Errors if:
+    - The specified wall is interior (shared with another room).
+      Fix: choose a different wall that faces outside.
+    - The opening doesn't fit on the wall (offset + width > wall length).
+    - The room ID does not exist.
+
+    Important:
+    - Every plan needs at least one exterior door (kind="entrance") to pass validation.
+    - Bedrooms, living rooms, and studies need at least one window on an exterior wall.
+    - Windows on interior walls will cause a validation error.
     """
     try:
         p = parse_plan(plan)
@@ -262,9 +439,28 @@ def update_room_tool(
     w: float | None = None,
     h: float | None = None,
 ) -> dict:
-    """Update a room's type, name, x, y, w, or h.
+    """Update one or more properties of an existing room.
 
-    Pass only the fields you want to change; others remain unchanged.
+    Pass only the fields you want to change — all others remain unchanged.
+    Useful for fixing validation errors (e.g. enlarging a room that's too small).
+
+    Input:
+      plan: The current floor plan
+      id: ID of the room to update
+      type: New room type (living, kitchen, dining, bedroom, bathroom, hallway, study, utility, storage)
+      name: New human-readable name
+      x: New left edge coordinate
+      y: New top edge coordinate
+      w: New width in metres
+      h: New height in metres
+
+    Returns the updated plan with score, errors, warnings, and viewer_url.
+
+    Common uses:
+    - Fix "room too small" warning: increase w and/or h
+    - Fix "aspect ratio too high" warning: make w and h closer to equal
+    - Fix overlap error: move the room (change x, y) or shrink it (reduce w, h)
+    - Change room type to satisfy window requirements (e.g. study needs a window)
     """
     try:
         p = parse_plan(plan)
@@ -289,9 +485,23 @@ def update_room_tool(
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def remove_element_tool(plan: dict, id: str) -> dict:
-    """Remove a room, door, or window by id.
+    """Remove a room, door, or window from a floor plan by its ID.
 
-    Removing a room also removes doors and windows that reference it.
+    When you remove a room, all doors and windows that reference that room
+    are automatically removed as well.
+
+    Input:
+      plan: The current floor plan
+      id: The ID of the room, door, or window to remove
+
+    Returns the updated plan with score, errors, warnings, and viewer_url.
+
+    Errors if the ID does not exist in the plan.
+
+    Use this to:
+    - Start over with a problematic room (remove it, then add a corrected version)
+    - Simplify a plan that's too complex
+    - Fix overlap errors by removing one of the overlapping rooms
     """
     try:
         p = parse_plan(plan)
@@ -306,8 +516,10 @@ def remove_element_tool(plan: dict, id: str) -> dict:
 # ---------------------------------------------------------------------------
 @mcp.resource("floorplan://rules")
 def rules_resource() -> str:
-    """Floor-plan rule catalogue."""
-    lines = ["# Floor-Plan Rules\n"]
+    """Floor-plan validation rule catalogue."""
+    lines = ["# Floor-Plan Validation Rules\n"]
+    lines.append("Plans are checked against these 10 rules. Errors mean the plan cannot work.")
+    lines.append("Warnings mean the plan works but has design issues.\n")
     for r in RULE_CATALOGUE:
-        lines.append(f"- **{r['id']}** ({r['severity']}): {r['description']}")
+        lines.append(f"- **{r['severity'].upper()}**: {r['description']}")
     return "\n".join(lines)

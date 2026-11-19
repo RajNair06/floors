@@ -251,8 +251,7 @@ function renderResults(data, svg) {
     // Build a lookup from violations for suggested_fix + region.
     const violationMap = {};
     (data.violations || []).forEach((v) => {
-      const key = `${v.rule}: ${v.message}`;
-      violationMap[key] = v;
+      violationMap[v.message] = v;
     });
 
     if (errors.length > 0) {
@@ -265,11 +264,8 @@ function renderResults(data, svg) {
         const li = document.createElement("li");
         li.className = "violation error";
         const v = violationMap[msg] || {};
-        // Strip the "Rxx: " prefix — show plain message.
-        const colonIdx = msg.indexOf(": ");
-        const messageText = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
         li.innerHTML = `
-          <p class="violation-message">${messageText}</p>
+          <p class="violation-message">${msg}</p>
           ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
         `;
         li.addEventListener("click", () => highlightRegion(v));
@@ -287,10 +283,8 @@ function renderResults(data, svg) {
         const li = document.createElement("li");
         li.className = "violation warning";
         const v = violationMap[msg] || {};
-        const colonIdx = msg.indexOf(": ");
-        const messageText = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
         li.innerHTML = `
-          <p class="violation-message">${messageText}</p>
+          <p class="violation-message">${msg}</p>
           ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
         `;
         li.addEventListener("click", () => highlightRegion(v));
@@ -361,6 +355,8 @@ function checkHash() {
     if (plan) {
       editor.value = JSON.stringify(plan, null, 2);
       scorePlan();
+      // Navigate to editor so user sees the loaded plan
+      navigateTo("editor");
     } else {
       showSchemaError("Could not decode plan from URL. It may be corrupt.");
     }
@@ -475,18 +471,14 @@ function renderPlanDetail(r) {
   if (r.errors && r.errors.length > 0) {
     html += `<div class="detail-section"><span class="detail-heading">ERRORS</span><ul>`;
     r.errors.forEach((msg) => {
-      const colonIdx = msg.indexOf(": ");
-      const text = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
-      html += `<li>${text}</li>`;
+      html += `<li>${msg}</li>`;
     });
     html += `</ul></div>`;
   }
   if (r.warnings && r.warnings.length > 0) {
     html += `<div class="detail-section"><span class="detail-heading">WARNINGS</span><ul>`;
     r.warnings.forEach((msg) => {
-      const colonIdx = msg.indexOf(": ");
-      const text = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
-      html += `<li>${text}</li>`;
+      html += `<li>${msg}</li>`;
     });
     html += `</ul></div>`;
   }

@@ -40,9 +40,9 @@ def score(plan: Plan) -> ScoreResult:
     for v in violations:
         breakdown[v.rule] = breakdown.get(v.rule, 0) + 1
 
-    # Plain-text error/warning arrays with rule prefix.
-    errors_list = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"]
-    warnings_list = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"]
+    # Plain-text error/warning arrays (no rule prefix — IDs are in violations).
+    errors_list = [v.message for v in violations if v.severity == "error"]
+    warnings_list = [v.message for v in violations if v.severity == "warning"]
 
     return ScoreResult(
         passed=n_errors == 0,
