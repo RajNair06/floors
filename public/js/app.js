@@ -342,11 +342,13 @@ function encodePlan(plan) {
 function decodePlanFragment(fragment) {
   // Try plain base64 first (browser share button encoding).
   try {
-    return { plan: JSON.parse(decodeURIComponent(escape(atob(fragment)))) };
-  } catch {
-    // Fall through to zlib + base64url (MCP server encoding).
+    const json = decodeURIComponent(escape(atob(fragment)));
+    return { plan: JSON.parse(json) };
+  } catch (e) {
+    console.warn("Plain base64 decode failed, trying deflate:", e.message);
   }
-  // Try zlib-compressed base64url — returns a Promise.
+  
+  // Try deflate-compressed base64url (MCP server encoding).
   try {
     let b64 = fragment.replace(/-/g, "+").replace(/_/g, "/");
     const padding = (4 - b64.length % 4) % 4;
@@ -370,8 +372,12 @@ function decodePlanFragment(fragment) {
         chunks.push(value);
         return readAll();
       });
-    return readAll().catch(() => ({ plan: null }));
-  } catch {
+    return readAll().catch((e) => {
+      console.error("Deflate decompression failed:", e);
+      return { plan: null };
+    });
+  } catch (e) {
+    console.error("Decode failed:", e);
     return { plan: null };
   }
 }
