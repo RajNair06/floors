@@ -332,6 +332,60 @@ document.getElementById("btn-share").addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Download SVG / GLB
+// ---------------------------------------------------------------------------
+document.getElementById("btn-download-svg").addEventListener("click", async () => {
+  const text = editor.value.trim();
+  if (!text) return;
+  try {
+    const plan = JSON.parse(text);
+    const resp = await fetch(`${API}/api/render`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(plan),
+    });
+    if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+    const data = await resp.json();
+    const blob = new Blob([data.svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${plan.id || "plan"}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(`Cannot download SVG: ${e.message}`);
+  }
+});
+
+document.getElementById("btn-download-glb").addEventListener("click", async () => {
+  const text = editor.value.trim();
+  if (!text) return;
+  try {
+    const plan = JSON.parse(text);
+    const resp = await fetch(`${API}/api/render3d`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(plan),
+    });
+    if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+    const data = await resp.json();
+    const binary = atob(data.glb);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "model/gltf-binary" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${plan.id || "plan"}.glb`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(`Cannot download GLB: ${e.message}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // URL fragment decoding
 // ---------------------------------------------------------------------------
 function encodePlan(plan) {

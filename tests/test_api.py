@@ -67,6 +67,20 @@ def test_render():
     assert "<svg" in resp.json()["svg"]
 
 
+def test_render3d():
+    import base64
+    resp = client.post("/api/render3d", json=VALID_PLAN)
+    assert resp.status_code == 200
+    glb_b64 = resp.json()["glb"]
+    glb_bytes = base64.b64decode(glb_b64)
+    assert glb_bytes[:4] == b"glTF"
+
+
+def test_render3d_schema_error():
+    resp = client.post("/api/render3d", json={"invalid": True})
+    assert resp.status_code == 422
+
+
 def test_eval():
     resp = client.post("/api/eval", json={"plans": [VALID_PLAN, VALID_PLAN]})
     assert resp.status_code == 200

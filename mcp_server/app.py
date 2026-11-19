@@ -19,6 +19,7 @@ from core.ops import (
     remove_element,
     update_room,
 )
+from core.render3d import render_glb_base64
 from core.rules import RULE_CATALOGUE
 from core.schema import parse_plan, plan_to_dict
 from core.score import evaluate, score, validate
@@ -482,6 +483,40 @@ def remove_element_tool(plan: dict, id: str) -> dict:
     except ValueError as e:
         return {"error": str(e)}
     return _wrap_result(p)
+
+
+@mcp.tool(annotations={"readOnlyHint": True})
+def render_3d_model(plan: dict, ceiling_height: float = 2.7) -> dict:
+    """Render a floor plan as a 3D GLB model.
+
+    Generates a binary glTF (GLB) file containing the 3D representation of
+    the floor plan. The model includes:
+    - Room floors (coloured by type)
+    - Walls (light grey)
+    - Doors (blue for interior, green for exterior)
+    - Windows (translucent light blue)
+
+    Input:
+      plan: A floor plan JSON object
+      ceiling_height: Wall height in metres (default 2.7)
+
+    Returns:
+      glb: Base64-encoded GLB file. Save this to a .glb file to view in
+           any 3D viewer (Blender, Windows 3D Viewer, SketchUp, etc.)
+
+    The GLB file can be opened directly in 3D software or embedded in web
+    pages using <model-viewer> or three.js.
+
+    Use this tool when you need a 3D visualization of the plan. For 2D
+    SVG rendering, use render_floorplan_svg instead.
+    """
+    try:
+        p = parse_plan(plan)
+    except ValueError as e:
+        detail = e.args[0] if e.args else {"error": "schema", "details": []}
+        return {"error": detail}
+    glb_base64 = render_glb_base64(p, ceiling_height)
+    return {"glb": glb_base64}
 
 
 # ---------------------------------------------------------------------------

@@ -586,6 +586,7 @@ code { font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 0.85em; bac
 }
 .view-tabs {
   display: flex;
+  align-items: center;
   border-bottom: 2px solid var(--black);
 }
 .view-tab {
@@ -599,9 +600,19 @@ code { font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 0.85em; bac
   border-right: 2px solid var(--black);
   transition: background 150ms ease-out, color 150ms ease-out;
 }
-.view-tab:last-child { border-right: none; }
+.view-tab:last-of-type { border-right: 2px solid var(--black); }
 .view-tab.active { background: var(--black); color: var(--white); }
 .view-tab:hover:not(.active) { background: var(--muted); }
+.view-tabs-spacer { flex: 1; }
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  border: none;
+  border-left: 2px solid var(--black);
+  border-radius: 0;
+}
 
 .view-content {
   display: none;

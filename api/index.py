@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from core import get_schema, render_svg
 from core.config import MAX_BATCH_SIZE
+from core.render3d import render_glb_base64
 from core.rules import RULE_CATALOGUE
 from core.schema import EvalReport, Plan, ScoreResult, Violation, parse_plan, plan_to_dict
 from core.score import evaluate, score, validate
@@ -143,6 +144,19 @@ async def render_route(request: Request):
     violations = validate(plan)
     svg = render_svg(plan, violations)
     return {"svg": svg}
+
+
+@app.post("/api/render3d")
+async def render3d_route(request: Request):
+    body = await request.json()
+    try:
+        plan = parse_plan(body)
+    except ValueError as e:
+        detail = e.args[0] if e.args else {"error": "schema", "details": []}
+        return JSONResponse(status_code=422, content=detail)
+    ceiling_height = body.get("ceiling_height", 2.7)
+    glb_base64 = render_glb_base64(plan, ceiling_height)
+    return {"glb": glb_base64}
 
 
 @app.post("/api/eval")
