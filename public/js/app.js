@@ -7,17 +7,44 @@ import { FloorPlan3D, isWebGLAvailable } from "./viewer3d.js";
 const API = "";
 
 // ---------------------------------------------------------------------------
-// Tab switching
+// Tab switching (supports both [data-tab] and [data-nav] attributes)
 // ---------------------------------------------------------------------------
-document.querySelectorAll(".tab").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+function navigateTo(tabId) {
+  document.querySelectorAll(".site-nav .nav-link").forEach((l) => l.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+
+  const tabEl = document.getElementById(`tab-${tabId}`);
+  if (tabEl) tabEl.classList.add("active");
+
+  const navLink = document.querySelector(`.nav-link[data-nav="${tabId}"]`);
+  if (navLink) navLink.classList.add("active");
+
+  // Scroll to top when switching tabs.
+  window.scrollTo({ top: 0, behavior: "instant" });
+
+  // If navigating to editor for the first time with no plan, load first seed.
+  if (tabId === "editor" && !editor.value.trim() && seedPicker.value === "") {
+    loadFirstSeed();
+  }
+
+  // Lazy-init 3D viewer when switching to 3D view inside editor.
+  if (tabId === "editor") {
+    const active3dBtn = document.querySelector(".view-tab[data-view='3d'].active");
+    if (active3dBtn && !viewer3d) {
+      requestAnimationFrame(() => initViewer3D());
+    }
+  }
+}
+
+// Navigation from header nav links.
+document.querySelectorAll("[data-nav]").forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    navigateTo(el.dataset.nav);
   });
 });
 
+// View tabs (2D / 3D) inside the editor — these don't switch main tabs.
 document.querySelectorAll(".view-tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".view-tab").forEach((b) => b.classList.remove("active"));
@@ -27,7 +54,6 @@ document.querySelectorAll(".view-tab").forEach((btn) => {
 
     // Lazy-init 3D viewer when switching to 3D tab for the first time.
     if (btn.dataset.view === "3d" && !viewer3d) {
-      // Wait one frame so the container is visible and has dimensions.
       requestAnimationFrame(() => initViewer3D());
     }
     // Refresh 3D if plan data is available and viewer is ready.
@@ -36,6 +62,18 @@ document.querySelectorAll(".view-tab").forEach((btn) => {
     }
   });
 });
+
+// Load the first seed when the user navigates to the editor with no plan.
+async function loadFirstSeed() {
+  if (!seedCache) {
+    const resp = await fetch(`${API}/api/seeds`);
+    seedCache = await resp.json();
+  }
+  if (seedCache.length > 0) {
+    seedPicker.value = seedCache[0].id;
+    seedPicker.dispatchEvent(new Event("change"));
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Editor
@@ -416,17 +454,35 @@ async function loadPlanIntoReviewer(plan) {
   document.getElementById("auto-verdict").classList.add("hidden");
   document.getElementById("reason-chips").innerHTML = "";
 
+  // Write plan into the editor (for shared scorePlan logic).
   editor.value = JSON.stringify(plan, null, 2);
-  await scorePlan();
 
-  // Fetch auto result.
-  const resp = await fetch(`${API}/api/score`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(plan),
-  });
-  if (resp.ok) {
-    currentAutoResult = await resp.json();
+  // Fetch score + render, then show SVG in reviewer view.
+  const [scoreResp, renderResp] = await Promise.all([
+    fetch(`${API}/api/score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(plan),
+    }),
+    fetch(`${API}/api/render`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(plan),
+    }),
+  ]);
+
+  if (scoreResp.ok) {
+    currentAutoResult = await scoreResp.json();
+    const renderData = await renderResp.json();
+
+    // Render SVG into the reviewer-plan div.
+    const reviewerPlan = document.getElementById("reviewer-plan");
+    reviewerPlan.innerHTML = renderData.svg;
+
+    // Also render into the editor's 2D view (if user navigates there).
+    hideSchemaError();
+    renderResults(currentAutoResult, renderData.svg);
+
     // Build reason chips.
     const rules = [...new Set(currentAutoResult.violations.map((v) => v.rule))];
     const chipsEl = document.getElementById("reason-chips");

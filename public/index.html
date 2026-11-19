@@ -3,31 +3,255 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Floor-Plan Checker</title>
+  <title>Floors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header>
-    <h1>Floor-Plan Checker</h1>
-    <nav>
-      <button class="tab active" data-tab="editor">Editor</button>
-      <button class="tab" data-tab="reviewer">Reviewer</button>
-      <button class="tab" data-tab="batch">Batch</button>
-      <button class="tab" data-tab="about">About</button>
+
+  <!-- Header -->
+  <header class="site-header">
+    <a href="#" class="site-logo" data-nav="home">FLOORS</a>
+    <nav class="site-nav">
+      <a href="#" data-nav="home" class="nav-link active">HOME</a>
+      <a href="#" data-nav="editor" class="nav-link">EDITOR</a>
+      <a href="#" data-nav="reviewer" class="nav-link">REVIEWER</a>
+      <a href="#" data-nav="batch" class="nav-link">BATCH</a>
+      <a href="#" data-nav="about" class="nav-link">ABOUT</a>
     </nav>
   </header>
 
-  <!-- Editor tab -->
-  <main id="tab-editor" class="tab-content active">
+  <!-- HOME -->
+  <main id="tab-home" class="tab-content active">
+
+    <!-- Hero -->
+    <section class="hero swiss-grid-pattern">
+      <div class="hero-grid">
+        <div class="hero-left">
+          <p class="section-label"><span class="accent">01.</span> SYSTEM</p>
+          <h1 class="hero-title">FLOORS</h1>
+          <h2 class="hero-subtitle">A DETERMINISTIC<br>FLOOR-PLAN<br>VALIDATOR</h2>
+          <p class="hero-body">
+            Check architectural layouts against ten heuristic rules.
+            Score plans. Label them. Export the data.
+            One pure-Python core, three surfaces: browser, API, and MCP.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" data-nav="editor">OPEN EDITOR</button>
+            <button class="btn btn-secondary" data-nav="about">READ THE RULES</button>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="hero-composition">
+            <div class="comp-rect comp-rect-1"></div>
+            <div class="comp-rect comp-rect-2"></div>
+            <div class="comp-rect comp-rect-3 swiss-dots"></div>
+            <div class="comp-circle"></div>
+            <div class="comp-label">5.0 × 4.0 M</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- What is Floors -->
+    <section class="section">
+      <div class="section-grid section-grid-2-1">
+        <div>
+          <p class="section-label"><span class="accent">02.</span> WHAT IT IS</p>
+          <h3 class="section-title">TEN RULES.<br>ONE SCORE.<br>NO OPINION.</h3>
+        </div>
+        <div>
+          <p class="body-text">
+            Floors takes a floor plan as JSON — rectangular rooms in metres,
+            doors on walls, windows on walls — and runs it through a
+            deterministic checker. Six rules are hard errors (the plan
+            cannot work). Four are warnings (the plan works, but a reviewer
+            might not like it). The output is a pass/fail verdict, a 0–1
+            score, and a list of violations with suggested fixes.
+          </p>
+          <p class="body-text">
+            The checker is the same whether you paste JSON in the browser,
+            call <code>POST /api/score</code>, or connect an MCP client.
+            No accounts, no database, no LLM calls inside the deployed app.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- How to use -->
+    <section class="section section-muted swiss-dots">
+      <p class="section-label"><span class="accent">03.</span> METHOD</p>
+      <h3 class="section-title">HOW TO USE IT</h3>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">01</div>
+          <h4 class="how-title">WRITE A PLAN</h4>
+          <p class="how-body">
+            Paste JSON, pick a seed, or build one room at a time through
+            the MCP authoring tools. The schema is served from
+            <code>/api/schema</code> so agents and humans share one source
+            of truth.
+          </p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">02</div>
+          <h4 class="how-title">SEE THE VIOLATIONS</h4>
+          <p class="how-body">
+            The 2D view renders the plan in SVG with coloured overlays
+            on every problem region. The 3D view extrudes rooms at the
+            plan's ceiling height so you can walk around the layout.
+          </p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">03</div>
+          <h4 class="how-title">LABEL AND EXPORT</h4>
+          <p class="how-body">
+            In the Reviewer, mark plans pass, fail, or skip — before the
+            auto verdict is shown. Labels live in your browser and export
+            as JSONL with the automatic score alongside.
+          </p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">04</div>
+          <h4 class="how-title">BATCH EVALUATE</h4>
+          <p class="how-body">
+            Drop up to 50 plans into the Batch tab and get pass rate,
+            mean score, and a per-rule failure breakdown. Useful for
+            comparing prompts, models, or repair-loop iterations.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Components -->
+    <section class="section">
+      <p class="section-label"><span class="accent">04.</span> COMPONENTS</p>
+      <h3 class="section-title">FOUR SURFACES,<br>ONE CORE</h3>
+      <div class="component-grid">
+        <a href="#" class="component-card" data-nav="editor">
+          <div class="component-num">A</div>
+          <h4 class="component-title">EDITOR</h4>
+          <p class="component-body">
+            JSON editor with seed picker, debounced scoring, 2D SVG and
+            3D Three.js views, and a violation panel. Every edit re-scores
+            the plan in 300 ms.
+          </p>
+          <span class="component-link">OPEN →</span>
+        </a>
+        <a href="#" class="component-card" data-nav="reviewer">
+          <div class="component-num">B</div>
+          <h4 class="component-title">REVIEWER</h4>
+          <p class="component-body">
+            Queue plans, label them pass/fail/skip with keyboard shortcuts,
+            pick reason chips, write a note. Auto verdict is hidden until
+            the human decides, so the rules don't anchor the label.
+          </p>
+          <span class="component-link">OPEN →</span>
+        </a>
+        <a href="#" class="component-card" data-nav="batch">
+          <div class="component-num">C</div>
+          <h4 class="component-title">BATCH</h4>
+          <p class="component-body">
+            Paste a JSON array or load all 25 seeds. Get pass rate,
+            mean score, per-rule counts, and a per-plan table. Cap: 50
+            plans per request.
+          </p>
+          <span class="component-link">OPEN →</span>
+        </a>
+        <a href="#" class="component-card" data-nav="about">
+          <div class="component-num">D</div>
+          <h4 class="component-title">ABOUT</h4>
+          <p class="component-body">
+            Rule catalogue, stated assumptions, the MCP connection snippet,
+            and what Floors deliberately does not do. Everything you need
+            to evaluate the eval bench itself.
+          </p>
+          <span class="component-link">OPEN →</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Quick try -->
+    <section class="section section-muted swiss-diagonal">
+      <div class="section-grid section-grid-1-2">
+        <div>
+          <p class="section-label"><span class="accent">05.</span> TRY IT</p>
+          <h3 class="section-title">ONE CLICK,<br>ONE SEED</h3>
+          <p class="body-text">
+            Load a seed plan and watch the checker mark every violation.
+            Switch to the 3D tab to walk around it. Then edit the JSON
+            and see the score update live.
+          </p>
+          <button class="btn btn-primary" data-nav="editor" id="btn-try-editor">GO TO EDITOR →</button>
+        </div>
+        <div class="try-stats">
+          <div class="stat">
+            <div class="stat-num">10</div>
+            <div class="stat-label">RULES</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">25</div>
+            <div class="stat-label">SEEDS</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">11</div>
+            <div class="stat-label">MCP TOOLS</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">0</div>
+            <div class="stat-label">ACCOUNTS</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div>
+          <p class="footer-logo">FLOORS</p>
+          <p class="footer-tagline">A deterministic floor-plan validator.</p>
+        </div>
+        <div>
+          <p class="footer-heading">ENDPOINTS</p>
+          <ul class="footer-list">
+            <li><code>GET /api/schema</code></li>
+            <li><code>POST /api/score</code></li>
+            <li><code>POST /api/render</code></li>
+            <li><code>POST /api/eval</code></li>
+            <li><code>/mcp</code></li>
+          </ul>
+        </div>
+        <div>
+          <p class="footer-heading">NON-GOALS</p>
+          <ul class="footer-list">
+            <li>No accounts</li>
+            <li>No database</li>
+            <li>No CAD import</li>
+            <li>No LLM calls</li>
+            <li>No curved rooms</li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- EDITOR -->
+  <main id="tab-editor" class="tab-content">
+    <section class="section section-compact">
+      <p class="section-label"><span class="accent">A.</span> EDITOR</p>
+      <h3 class="section-title-sm">WRITE · SCORE · VIEW</h3>
+    </section>
     <div class="editor-layout">
       <aside class="editor-panel">
         <div class="toolbar">
-          <label for="seed-picker">Load seed:</label>
-          <select id="seed-picker"><option value="">— pick —</option></select>
-          <button id="btn-format">Format</button>
-          <button id="btn-share">Copy share link</button>
+          <label for="seed-picker" class="toolbar-label">SEED</label>
+          <select id="seed-picker" class="input-select"><option value="">— PICK —</option></select>
+          <button id="btn-format" class="btn btn-ghost">FORMAT</button>
+          <button id="btn-share" class="btn btn-ghost">SHARE LINK</button>
         </div>
-        <textarea id="plan-editor" spellcheck="false" placeholder="Paste floor plan JSON here…"></textarea>
+        <textarea id="plan-editor" class="code-editor" spellcheck="false" placeholder="{ }"></textarea>
         <div id="schema-errors" class="error-box"></div>
       </aside>
       <section class="view-panel">
@@ -45,61 +269,94 @@
     </div>
   </main>
 
-  <!-- Reviewer tab -->
+  <!-- REVIEWER -->
   <main id="tab-reviewer" class="tab-content">
+    <section class="section section-compact">
+      <p class="section-label"><span class="accent">B.</span> REVIEWER</p>
+      <h3 class="section-title-sm">LABEL BEFORE YOU SEE THE VERDICT</h3>
+    </section>
     <div class="reviewer-layout">
       <div id="reviewer-plan" class="reviewer-view"></div>
       <div class="reviewer-controls">
-        <h2>Review</h2>
-        <p>Label this plan before seeing the automatic verdict.</p>
         <div class="label-buttons">
-          <button id="btn-pass" class="btn-pass">Pass (P)</button>
-          <button id="btn-fail" class="btn-fail">Fail (F)</button>
-          <button id="btn-skip" class="btn-skip">Skip (S)</button>
+          <button id="btn-pass" class="btn btn-pass">PASS · P</button>
+          <button id="btn-fail" class="btn btn-fail">FAIL · F</button>
+          <button id="btn-skip" class="btn btn-skip">SKIP · S</button>
         </div>
         <div id="reason-chips"></div>
-        <textarea id="review-note" placeholder="Optional note…"></textarea>
-        <button id="btn-save-label">Save label</button>
-        <div id="auto-verdict" class="hidden"></div>
+        <textarea id="review-note" class="input-text" placeholder="OPTIONAL NOTE"></textarea>
+        <button id="btn-save-label" class="btn btn-primary">SAVE LABEL</button>
+        <div id="auto-verdict" class="hidden verdict-box"></div>
         <div class="reviewer-stats">
-          <span id="agreement-rate">Agreement: —</span>
-          <span id="label-count">Labels: 0</span>
+          <span id="agreement-rate">AGREEMENT —</span>
+          <span id="label-count">LABELS 0</span>
         </div>
-        <div>
-          <button id="btn-export">Export JSONL</button>
-          <button id="btn-clear-labels">Clear labels</button>
+        <div class="reviewer-actions">
+          <button id="btn-export" class="btn btn-secondary">EXPORT JSONL</button>
+          <button id="btn-clear-labels" class="btn btn-ghost">CLEAR</button>
         </div>
-        <div id="reviewer-queue">
-          <button id="btn-load-seeds">Load all seeds</button>
+        <div class="reviewer-queue">
+          <button id="btn-load-seeds" class="btn btn-secondary">LOAD NEXT SEED</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Batch tab -->
+  <!-- BATCH -->
   <main id="tab-batch" class="tab-content">
-    <h2>Batch Evaluation (max 50 plans)</h2>
-    <button id="btn-load-all-seeds">Load all seeds</button>
-    <textarea id="batch-input" placeholder="Paste a JSON array of plans…"></textarea>
-    <button id="btn-run-eval">Run eval</button>
-    <div id="batch-results"></div>
+    <section class="section section-compact">
+      <p class="section-label"><span class="accent">C.</span> BATCH</p>
+      <h3 class="section-title-sm">UP TO 50 PLANS · ONE CALL</h3>
+    </section>
+    <div class="batch-layout">
+      <div class="batch-input-area">
+        <button id="btn-load-all-seeds" class="btn btn-secondary">LOAD ALL SEEDS</button>
+        <textarea id="batch-input" class="code-editor" placeholder="[ ]"></textarea>
+        <button id="btn-run-eval" class="btn btn-primary">RUN EVAL</button>
+      </div>
+      <div id="batch-results"></div>
+    </div>
   </main>
 
-  <!-- About tab -->
+  <!-- ABOUT -->
   <main id="tab-about" class="tab-content">
-    <h2>Rules</h2>
-    <div id="rule-catalogue"></div>
-    <h2>MCP Connection</h2>
-    <p>Connect an MCP client to this deployment:</p>
-    <pre id="mcp-config"></pre>
-    <h2>Assumptions</h2>
-    <ul>
-      <li>All coordinates in metres, y grows downward.</li>
-      <li>Wall thickness is ignored; rooms share edges exactly.</li>
-      <li>Only axis-aligned rectangular rooms.</li>
-      <li>Any exterior door counts as an entrance.</li>
-      <li>Thresholds are sensible heuristics, not legal code.</li>
-    </ul>
+    <section class="section section-compact">
+      <p class="section-label"><span class="accent">D.</span> ABOUT</p>
+      <h3 class="section-title-sm">RULES · ASSUMPTIONS · MCP</h3>
+    </section>
+
+    <section class="section">
+      <h4 class="subsection-title">RULE CATALOGUE</h4>
+      <div id="rule-catalogue" class="rule-table"></div>
+    </section>
+
+    <section class="section section-muted">
+      <h4 class="subsection-title">ASSUMPTIONS</h4>
+      <ul class="assumption-list">
+        <li>All coordinates in metres. Y grows downward.</li>
+        <li>Wall thickness is ignored. Rooms share edges exactly.</li>
+        <li>Only axis-aligned rectangular rooms.</li>
+        <li>Any exterior door counts as an entrance.</li>
+        <li>Thresholds are sensible heuristics, not legal building code.</li>
+        <li>Labels live in the browser. Nothing is stored server-side.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h4 class="subsection-title">MCP CONNECTION</h4>
+      <p class="body-text">Point any MCP client at this deployment:</p>
+      <pre id="mcp-config" class="code-block"></pre>
+    </section>
+
+    <section class="section section-muted">
+      <h4 class="subsection-title">NON-GOALS</h4>
+      <p class="body-text">
+        No accounts, auth, or multi-user collaboration.
+        No CAD/DXF/image import. No curved or non-rectangular rooms.
+        No multi-storey plans. No LLM calls inside the deployed app.
+        No claim of legal building-code compliance.
+      </p>
+    </section>
   </main>
 
   <script type="module" src="/js/app.js"></script>
