@@ -87,6 +87,7 @@ class Window(BaseModel):
 class Plan(BaseModel):
     schema_version: str = "1.0"
     id: str
+    title: Optional[str] = None
     units: str = "m"
     ceiling_height: float = 2.7
     rooms: list[Room] = []

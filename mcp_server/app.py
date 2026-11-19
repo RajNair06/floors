@@ -94,7 +94,9 @@ def validate_floorplan(plan: dict) -> dict:
         return {"error": detail}
     violations = validate(p)
     passed = all(v.severity != "error" for v in violations)
-    return {"passed": passed, "violations": [v.model_dump() for v in violations]}
+    errors = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"] or None
+    warnings = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"] or None
+    return {"passed": passed, "errors": errors, "warnings": warnings, "violations": [v.model_dump() for v in violations]}
 
 
 @mcp.tool(annotations={"readOnlyHint": True})

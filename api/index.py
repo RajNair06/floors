@@ -107,7 +107,9 @@ async def validate_route(request: Request):
         return JSONResponse(status_code=422, content=detail)
     violations = validate(plan)
     passed = all(v.severity != "error" for v in violations)
-    return {"passed": passed, "violations": [v.model_dump() for v in violations]}
+    errors = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"] or None
+    warnings = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"] or None
+    return {"passed": passed, "errors": errors, "warnings": warnings, "violations": [v.model_dump() for v in violations]}
 
 
 @app.post("/api/score")
@@ -122,6 +124,8 @@ async def score_route(request: Request):
     return {
         "passed": result.passed,
         "score": result.score,
+        "errors": result.errors,
+        "warnings": result.warnings,
         "breakdown": result.breakdown,
         "violations": [v.model_dump() for v in result.violations],
     }
@@ -177,7 +181,9 @@ async def seeds_detail(seed_id: str):
     seeds = _load_seeds()
     for s in seeds:
         if s.get("id") == seed_id:
-            return s
+            # Return plan fields only; strip test metadata.
+            plan = {k: v for k, v in s.items() if k != "expected_failures"}
+            return plan
     raise HTTPException(status_code=404, detail="Seed not found")
 
 

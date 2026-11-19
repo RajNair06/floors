@@ -485,7 +485,7 @@ code { font-family: 'JetBrains Mono', 'Menlo', monospace; font-size: 0.85em; bac
 }
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: clamp(32px, 5vw, 80px);
 }
 @media (max-width: 768px) {
