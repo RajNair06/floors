@@ -17,7 +17,6 @@
     <nav class="site-nav">
       <a href="#" data-nav="home" class="nav-link active">HOME</a>
       <a href="#" data-nav="editor" class="nav-link">EDITOR</a>
-      <a href="#" data-nav="reviewer" class="nav-link">REVIEWER</a>
       <a href="#" data-nav="batch" class="nav-link">BATCH</a>
       <a href="#" data-nav="about" class="nav-link">ABOUT</a>
     </nav>
@@ -106,11 +105,11 @@
         </div>
         <div class="how-card">
           <div class="how-num">03</div>
-          <h4 class="how-title">LABEL AND EXPORT</h4>
+          <h4 class="how-title">FIX AND ITERATE</h4>
           <p class="how-body">
-            In the Reviewer, mark plans pass, fail, or skip — before the
-            auto verdict is shown. Labels live in your browser and export
-            as JSONL with the automatic score alongside.
+            Edit the JSON to address each violation. The plan re-scores
+            in 300 ms. Use the MCP authoring tools to add rooms, connect
+            them, or place openings — all validated on every call.
           </p>
         </div>
         <div class="how-card">
@@ -128,7 +127,7 @@
     <!-- Components -->
     <section class="section">
       <p class="section-label"><span class="accent">04.</span> COMPONENTS</p>
-      <h3 class="section-title">FOUR SURFACES,<br>ONE CORE</h3>
+      <h3 class="section-title">THREE SURFACES,<br>ONE CORE</h3>
       <div class="component-grid">
         <a href="#" class="component-card" data-nav="editor">
           <div class="component-num">A</div>
@@ -140,28 +139,18 @@
           </p>
           <span class="component-link">OPEN →</span>
         </a>
-        <a href="#" class="component-card" data-nav="reviewer">
-          <div class="component-num">B</div>
-          <h4 class="component-title">REVIEWER</h4>
-          <p class="component-body">
-            Queue plans, label them pass/fail/skip with keyboard shortcuts,
-            pick reason chips, write a note. Auto verdict is hidden until
-            the human decides, so the rules don't anchor the label.
-          </p>
-          <span class="component-link">OPEN →</span>
-        </a>
         <a href="#" class="component-card" data-nav="batch">
-          <div class="component-num">C</div>
+          <div class="component-num">B</div>
           <h4 class="component-title">BATCH</h4>
           <p class="component-body">
             Paste a JSON array or load all 25 seeds. Get pass rate,
-            mean score, per-rule counts, and a per-plan table. Cap: 50
-            plans per request.
+            mean score, per-rule counts, and a per-plan table with full
+            error details. Cap: 50 plans per request.
           </p>
           <span class="component-link">OPEN →</span>
         </a>
         <a href="#" class="component-card" data-nav="about">
-          <div class="component-num">D</div>
+          <div class="component-num">C</div>
           <h4 class="component-title">ABOUT</h4>
           <p class="component-body">
             Rule catalogue, stated assumptions, the MCP connection snippet,
@@ -269,43 +258,10 @@
     </div>
   </main>
 
-  <!-- REVIEWER -->
-  <main id="tab-reviewer" class="tab-content">
-    <section class="section section-compact">
-      <p class="section-label"><span class="accent">B.</span> REVIEWER</p>
-      <h3 class="section-title-sm">LABEL BEFORE YOU SEE THE VERDICT</h3>
-    </section>
-    <div class="reviewer-layout">
-      <div id="reviewer-plan" class="reviewer-view"></div>
-      <div class="reviewer-controls">
-        <div class="label-buttons">
-          <button id="btn-pass" class="btn btn-pass">PASS · P</button>
-          <button id="btn-fail" class="btn btn-fail">FAIL · F</button>
-          <button id="btn-skip" class="btn btn-skip">SKIP · S</button>
-        </div>
-        <div id="reason-chips"></div>
-        <textarea id="review-note" class="input-text" placeholder="OPTIONAL NOTE"></textarea>
-        <button id="btn-save-label" class="btn btn-primary">SAVE LABEL</button>
-        <div id="auto-verdict" class="hidden verdict-box"></div>
-        <div class="reviewer-stats">
-          <span id="agreement-rate">AGREEMENT —</span>
-          <span id="label-count">LABELS 0</span>
-        </div>
-        <div class="reviewer-actions">
-          <button id="btn-export" class="btn btn-secondary">EXPORT JSONL</button>
-          <button id="btn-clear-labels" class="btn btn-ghost">CLEAR</button>
-        </div>
-        <div class="reviewer-queue">
-          <button id="btn-load-seeds" class="btn btn-secondary">LOAD NEXT SEED</button>
-        </div>
-      </div>
-    </div>
-  </main>
-
   <!-- BATCH -->
   <main id="tab-batch" class="tab-content">
     <section class="section section-compact">
-      <p class="section-label"><span class="accent">C.</span> BATCH</p>
+      <p class="section-label"><span class="accent">B.</span> BATCH</p>
       <h3 class="section-title-sm">UP TO 50 PLANS · ONE CALL</h3>
     </section>
     <div class="batch-layout">
@@ -321,7 +277,7 @@
   <!-- ABOUT -->
   <main id="tab-about" class="tab-content">
     <section class="section section-compact">
-      <p class="section-label"><span class="accent">D.</span> ABOUT</p>
+      <p class="section-label"><span class="accent">C.</span> ABOUT</p>
       <h3 class="section-title-sm">RULES · ASSUMPTIONS · MCP</h3>
     </section>
 
@@ -338,7 +294,6 @@
         <li>Only axis-aligned rectangular rooms.</li>
         <li>Any exterior door counts as an entrance.</li>
         <li>Thresholds are sensible heuristics, not legal building code.</li>
-        <li>Labels live in the browser. Nothing is stored server-side.</li>
       </ul>
     </section>
 

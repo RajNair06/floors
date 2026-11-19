@@ -183,6 +183,8 @@ class Violation(BaseModel):
 class ScoreResult(BaseModel):
     passed: bool
     score: float
+    errors: Optional[list[str]] = None
+    warnings: Optional[list[str]] = None
     breakdown: dict[str, int]
     violations: list[Violation]
 

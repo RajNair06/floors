@@ -48,8 +48,8 @@ def r01_no_overlap(plan: Plan) -> list[Violation]:
                         rule="R01",
                         severity="error",
                         room_ids=[r1.id, r2.id],
-                        message=f"Rooms '{r1.name}' and '{r2.name}' overlap by {area:.2f} m².",
-                        suggested_fix="Move or shrink one room so edges only touch.",
+                        message=f"'{r1.name}' and '{r2.name}' overlap by {area:.2f} m².",
+                        suggested_fix="Move or shrink one room so the edges only touch.",
                         region=room_rect(r1),
                     )
                 )
@@ -68,8 +68,8 @@ def r02_has_entrance(plan: Plan) -> list[Violation]:
                 rule="R02",
                 severity="error",
                 room_ids=[],
-                message="Plan has no entrance (no exterior door).",
-                suggested_fix="Add an exterior door to a room with an exterior wall.",
+                message="The plan has no entrance. Add at least one exterior door.",
+                suggested_fix="Add an exterior door to any room that has an exterior wall.",
             )
         ]
     return []
@@ -117,8 +117,8 @@ def r03_all_reachable(plan: Plan) -> list[Violation]:
             rule="R03",
             severity="error",
             room_ids=[r.id],
-            message=f"Room '{r.name}' is not reachable from the entrance.",
-            suggested_fix="Add a door linking it to an adjacent room.",
+            message=f"'{r.name}' is not reachable from the entrance.",
+            suggested_fix=f"Add a door linking '{r.name}' to an adjacent room.",
             region=room_rect(r),
         )
         for r in unreachable
@@ -147,8 +147,8 @@ def r04_habitable_window(plan: Plan) -> list[Violation]:
                     rule="R04",
                     severity="error",
                     room_ids=[room.id],
-                    message=f"{room.type.capitalize()} '{room.name}' has no window on an exterior wall.",
-                    suggested_fix=f"Add a window on an exterior wall of {room.id}.",
+                    message=f"'{room.name}' ({room.type}) has no window on an exterior wall.",
+                    suggested_fix=f"Add a window on an exterior wall of '{room.name}'.",
                     region=room_rect(room),
                 )
             )
@@ -174,8 +174,8 @@ def r05_doors_on_walls(plan: Plan) -> list[Violation]:
                         rule="R05",
                         severity="error",
                         room_ids=[door.from_],
-                        message=f"Exterior door '{door.id}' is on an interior wall of '{from_room.name}'.",
-                        suggested_fix="Move the door onto an exterior wall.",
+                        message=f"Exterior door in '{from_room.name}' is on an interior wall (wall {door.wall}).",
+                        suggested_fix=f"Move the exterior door in '{from_room.name}' to an exterior wall.",
                         region=room_rect(from_room),
                     )
                 )
@@ -192,8 +192,8 @@ def r05_doors_on_walls(plan: Plan) -> list[Violation]:
                         rule="R05",
                         severity="error",
                         room_ids=[door.from_, door.to],
-                        message=f"Door '{door.id}' between '{from_room.name}' and '{to_room.name}' is not on their shared wall.",
-                        suggested_fix="Move the door onto the wall segment the two rooms share.",
+                        message=f"Door between '{from_room.name}' and '{to_room.name}' is on wall {door.wall}, which they do not share.",
+                        suggested_fix=f"Move the door between '{from_room.name}' and '{to_room.name}' to the wall segment they share.",
                         region=room_rect(from_room),
                     )
                 )
@@ -217,8 +217,8 @@ def r06_windows_exterior(plan: Plan) -> list[Violation]:
                     rule="R06",
                     severity="error",
                     room_ids=[window.room],
-                    message=f"Window '{window.id}' in '{room.name}' is on an interior wall.",
-                    suggested_fix="Move the window to an exterior wall.",
+                    message=f"Window in '{room.name}' is on an interior wall (wall {window.wall}).",
+                    suggested_fix=f"Move the window in '{room.name}' to an exterior wall.",
                     region=room_rect(room),
                 )
             )
@@ -240,8 +240,8 @@ def r07_min_area(plan: Plan) -> list[Violation]:
                     rule="R07",
                     severity="warning",
                     room_ids=[room.id],
-                    message=f"Room '{room.name}' ({room.type}) is {area:.1f} m², below the {minimum:.1f} m² minimum.",
-                    suggested_fix=f"Enlarge the room to at least {minimum:.1f} m².",
+                    message=f"'{room.name}' ({room.type}) is {area:.1f} m² — below the {minimum:.1f} m² minimum.",
+                    suggested_fix=f"Enlarge '{room.name}' to at least {minimum:.1f} m².",
                     region=room_rect(room),
                 )
             )
@@ -267,8 +267,8 @@ def r08_proportions(plan: Plan) -> list[Violation]:
                     rule="R08",
                     severity="warning",
                     room_ids=[room.id],
-                    message=f"Room '{room.name}' has aspect ratio {ratio:.1f}:1 (max {MAX_ASPECT_RATIO}:1).",
-                    suggested_fix="Adjust the room dimensions to be more square.",
+                    message=f"'{room.name}' has an aspect ratio of {ratio:.1f}:1 (maximum {MAX_ASPECT_RATIO}:1).",
+                    suggested_fix=f"Make '{room.name}' more square.",
                     region=room_rect(room),
                 )
             )
@@ -278,8 +278,8 @@ def r08_proportions(plan: Plan) -> list[Violation]:
                     rule="R08",
                     severity="warning",
                     room_ids=[room.id],
-                    message=f"Room '{room.name}' has a side under {min_side} m.",
-                    suggested_fix=f"Make the shortest side at least {min_side} m.",
+                    message=f"'{room.name}' has a side shorter than {min_side} m.",
+                    suggested_fix=f"Make the shortest side of '{room.name}' at least {min_side} m.",
                     region=room_rect(room),
                 )
             )
@@ -290,8 +290,8 @@ def r08_proportions(plan: Plan) -> list[Violation]:
                 rule="R08",
                 severity="warning",
                 room_ids=[],
-                message=f"Total plan area is {total_area:.1f} m², below the {MIN_TOTAL_AREA} m² minimum.",
-                suggested_fix="Enlarge the plan.",
+                message=f"Total plan area is {total_area:.1f} m² — below the {MIN_TOTAL_AREA} m² minimum.",
+                suggested_fix="Enlarge the overall plan.",
             )
         )
     elif total_area > MAX_TOTAL_AREA:
@@ -300,8 +300,8 @@ def r08_proportions(plan: Plan) -> list[Violation]:
                 rule="R08",
                 severity="warning",
                 room_ids=[],
-                message=f"Total plan area is {total_area:.1f} m², above the {MAX_TOTAL_AREA} m² maximum.",
-                suggested_fix="Reduce the plan size.",
+                message=f"Total plan area is {total_area:.1f} m² — above the {MAX_TOTAL_AREA} m² maximum.",
+                suggested_fix="Reduce the overall plan size.",
             )
         )
     return violations
@@ -313,7 +313,9 @@ def r08_proportions(plan: Plan) -> list[Violation]:
 def r09_door_widths(plan: Plan) -> list[Violation]:
     """Interior doors outside 0.7-1.2 m, or exterior door under 0.9 m."""
     violations = []
+    room_map = {r.id: r for r in plan.rooms}
     for door in plan.doors:
+        from_name = room_map[door.from_].name if door.from_ in room_map else door.from_
         if door.to == "outside":
             if door.width < MIN_EXTERIOR_DOOR_WIDTH:
                 violations.append(
@@ -321,19 +323,20 @@ def r09_door_widths(plan: Plan) -> list[Violation]:
                         rule="R09",
                         severity="warning",
                         room_ids=[door.from_],
-                        message=f"Exterior door '{door.id}' is {door.width:.2f} m wide (min {MIN_EXTERIOR_DOOR_WIDTH} m).",
-                        suggested_fix=f"Widen the door to at least {MIN_EXTERIOR_DOOR_WIDTH} m.",
+                        message=f"Exterior door in '{from_name}' is {door.width:.2f} m wide (minimum {MIN_EXTERIOR_DOOR_WIDTH} m).",
+                        suggested_fix=f"Widen the exterior door in '{from_name}' to at least {MIN_EXTERIOR_DOOR_WIDTH} m.",
                     )
                 )
         else:
+            to_name = room_map[door.to].name if door.to in room_map else door.to
             if door.width < MIN_INTERIOR_DOOR_WIDTH or door.width > MAX_INTERIOR_DOOR_WIDTH:
                 violations.append(
                     Violation(
                         rule="R09",
                         severity="warning",
                         room_ids=[door.from_],
-                        message=f"Interior door '{door.id}' is {door.width:.2f} m wide (should be {MIN_INTERIOR_DOOR_WIDTH}-{MAX_INTERIOR_DOOR_WIDTH} m).",
-                        suggested_fix=f"Resize the door to between {MIN_INTERIOR_DOOR_WIDTH} and {MAX_INTERIOR_DOOR_WIDTH} m.",
+                        message=f"Door between '{from_name}' and '{to_name}' is {door.width:.2f} m wide (expected {MIN_INTERIOR_DOOR_WIDTH}–{MAX_INTERIOR_DOOR_WIDTH} m).",
+                        suggested_fix=f"Resize the door between '{from_name}' and '{to_name}' to {MIN_INTERIOR_DOOR_WIDTH}–{MAX_INTERIOR_DOOR_WIDTH} m.",
                     )
                 )
     return violations
@@ -365,8 +368,8 @@ def r10_bathroom_privacy(plan: Plan) -> list[Violation]:
                         rule="R10",
                         severity="warning",
                         room_ids=[bathroom.id, other.id],
-                        message=f"Bathroom '{bathroom.name}' opens directly from {other.type} '{other.name}'.",
-                        suggested_fix="Route the bathroom door through a hallway or bedroom.",
+                        message=f"'{bathroom.name}' opens directly into '{other.name}' ({other.type}).",
+                        suggested_fix=f"Route the door to '{bathroom.name}' through a hallway or bedroom instead of '{other.name}'.",
                         region=room_rect(bathroom),
                     )
                 )

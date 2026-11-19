@@ -48,6 +48,8 @@ def _wrap_result(plan):
             "plan": plan_dict,
             "passed": score_result.passed,
             "score": score_result.score,
+            "errors": score_result.errors,
+            "warnings": score_result.warnings,
             "violations": [v.model_dump() for v in score_result.violations],
             "viewer_url": viewer_url(plan_dict, base),
         }
@@ -57,6 +59,8 @@ def _wrap_result(plan):
             "plan": plan_dict,
             "passed": score_result.passed,
             "score": score_result.score,
+            "errors": score_result.errors,
+            "warnings": score_result.warnings,
             "violations": [v.model_dump() for v in score_result.violations],
             "viewer_url": None,
         }
@@ -116,6 +120,8 @@ def score_floorplan(plan: dict) -> dict:
         "plan": plan_dict,
         "passed": result.passed,
         "score": result.score,
+        "errors": result.errors,
+        "warnings": result.warnings,
         "breakdown": result.breakdown,
         "violations": [v.model_dump() for v in result.violations],
         "viewer_url": url,

@@ -1,5 +1,5 @@
 /**
- * Floor-Plan Checker — main application module.
+ * Floors — main application module.
  */
 
 import { FloorPlan3D, isWebGLAvailable } from "./viewer3d.js";
@@ -7,7 +7,7 @@ import { FloorPlan3D, isWebGLAvailable } from "./viewer3d.js";
 const API = "";
 
 // ---------------------------------------------------------------------------
-// Tab switching (supports both [data-tab] and [data-nav] attributes)
+// Tab switching
 // ---------------------------------------------------------------------------
 function navigateTo(tabId) {
   document.querySelectorAll(".site-nav .nav-link").forEach((l) => l.classList.remove("active"));
@@ -19,15 +19,12 @@ function navigateTo(tabId) {
   const navLink = document.querySelector(`.nav-link[data-nav="${tabId}"]`);
   if (navLink) navLink.classList.add("active");
 
-  // Scroll to top when switching tabs.
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // If navigating to editor for the first time with no plan, load first seed.
   if (tabId === "editor" && !editor.value.trim() && seedPicker.value === "") {
     loadFirstSeed();
   }
 
-  // Lazy-init 3D viewer when switching to 3D view inside editor.
   if (tabId === "editor") {
     const active3dBtn = document.querySelector(".view-tab[data-view='3d'].active");
     if (active3dBtn && !viewer3d) {
@@ -36,7 +33,6 @@ function navigateTo(tabId) {
   }
 }
 
-// Navigation from header nav links.
 document.querySelectorAll("[data-nav]").forEach((el) => {
   el.addEventListener("click", (e) => {
     e.preventDefault();
@@ -44,7 +40,7 @@ document.querySelectorAll("[data-nav]").forEach((el) => {
   });
 });
 
-// View tabs (2D / 3D) inside the editor — these don't switch main tabs.
+// View tabs (2D / 3D) inside the editor.
 document.querySelectorAll(".view-tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".view-tab").forEach((b) => b.classList.remove("active"));
@@ -52,18 +48,15 @@ document.querySelectorAll(".view-tab").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(`view-${btn.dataset.view}`).classList.add("active");
 
-    // Lazy-init 3D viewer when switching to 3D tab for the first time.
     if (btn.dataset.view === "3d" && !viewer3d) {
       requestAnimationFrame(() => initViewer3D());
     }
-    // Refresh 3D if plan data is available and viewer is ready.
     if (btn.dataset.view === "3d" && viewer3d && currentPlan) {
       requestAnimationFrame(() => viewer3d.loadPlan(currentPlan, currentViolations));
     }
   });
 });
 
-// Load the first seed when the user navigates to the editor with no plan.
 async function loadFirstSeed() {
   if (!seedCache) {
     const resp = await fetch(`${API}/api/seeds`);
@@ -99,15 +92,13 @@ function initViewer3D() {
     return;
   }
   container.innerHTML = "";
-  // Add toolbar.
   const toolbar = document.createElement("div");
   toolbar.className = "view-3d-toolbar";
   toolbar.innerHTML = `
-    <button id="btn-3d-top" class="view-3d-btn" title="Top-down view">⬇ Top</button>
-    <button id="btn-3d-perspective" class="view-3d-btn" title="Perspective view">◆ 3D</button>
+    <button id="btn-3d-top" class="view-3d-btn" title="Top-down view">TOP</button>
+    <button id="btn-3d-perspective" class="view-3d-btn" title="Perspective view">3D</button>
   `;
   container.appendChild(toolbar);
-  // Canvas container.
   const canvasWrap = document.createElement("div");
   canvasWrap.className = "view-3d-canvas";
   container.appendChild(canvasWrap);
@@ -118,7 +109,6 @@ function initViewer3D() {
   document.getElementById("btn-3d-top").addEventListener("click", () => viewer3d.resetTopDown());
   document.getElementById("btn-3d-perspective").addEventListener("click", () => viewer3d.resetPerspective());
 
-  // Load current plan if available.
   if (currentPlan) {
     viewer3d.loadPlan(currentPlan, currentViolations);
   }
@@ -250,19 +240,77 @@ function renderResults(data, svg) {
     <span>Score: ${data.score}</span>
   `;
 
-  // Violations.
+  // Violations — grouped into errors and warnings sections.
   violationsList.innerHTML = "";
-  data.violations.forEach((v) => {
-    const li = document.createElement("li");
-    li.className = v.severity;
-    li.innerHTML = `
-      <div><span class="rule-id">${v.rule}</span> ${v.severity.toUpperCase()}</div>
-      <div>${v.message}</div>
-      <div class="fix">💡 ${v.suggested_fix}</div>
-    `;
-    li.addEventListener("click", () => highlightRegion(v));
-    violationsList.appendChild(li);
-  });
+  const errors = data.errors || [];
+  const warnings = data.warnings || [];
+
+  if (errors.length === 0 && warnings.length === 0) {
+    violationsList.innerHTML = "<li class='notice'>No violations. Plan is valid.</li>";
+  } else {
+    // Build a lookup from violations for suggested_fix + region.
+    const violationMap = {};
+    (data.violations || []).forEach((v) => {
+      const key = `${v.rule}: ${v.message}`;
+      violationMap[key] = v;
+    });
+
+    if (errors.length > 0) {
+      const heading = document.createElement("li");
+      heading.className = "violation-group-heading";
+      heading.innerHTML = `<span>ERRORS (${errors.length})</span>`;
+      violationsList.appendChild(heading);
+
+      errors.forEach((msg) => {
+        const li = document.createElement("li");
+        li.className = "violation error";
+        const v = violationMap[msg] || {};
+        const ruleId = msg.split(":")[0] || "";
+        const messageText = msg.slice(ruleId.length + 2);
+        const roomTags = (v.room_ids || [])
+          .map((rid) => `<span class="room-tag">${rid}</span>`)
+          .join("");
+        li.innerHTML = `
+          <div class="violation-header">
+            <span class="rule-id">${ruleId}</span>
+            ${roomTags}
+          </div>
+          <p class="violation-message">${messageText}</p>
+          ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
+        `;
+        li.addEventListener("click", () => highlightRegion(v));
+        violationsList.appendChild(li);
+      });
+    }
+
+    if (warnings.length > 0) {
+      const heading = document.createElement("li");
+      heading.className = "violation-group-heading";
+      heading.innerHTML = `<span>WARNINGS (${warnings.length})</span>`;
+      violationsList.appendChild(heading);
+
+      warnings.forEach((msg) => {
+        const li = document.createElement("li");
+        li.className = "violation warning";
+        const v = violationMap[msg] || {};
+        const ruleId = msg.split(":")[0] || "";
+        const messageText = msg.slice(ruleId.length + 2);
+        const roomTags = (v.room_ids || [])
+          .map((rid) => `<span class="room-tag">${rid}</span>`)
+          .join("");
+        li.innerHTML = `
+          <div class="violation-header">
+            <span class="rule-id">${ruleId}</span>
+            ${roomTags}
+          </div>
+          <p class="violation-message">${messageText}</p>
+          ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
+        `;
+        li.addEventListener("click", () => highlightRegion(v));
+        violationsList.appendChild(li);
+      });
+    }
+  }
 
   // SVG.
   view2d.innerHTML = svg;
@@ -276,14 +324,12 @@ function renderResults(data, svg) {
     currentViolations = [];
   }
 
-  // Update 3D view if initialized.
   if (viewer3d && currentPlan) {
     viewer3d.loadPlan(currentPlan, currentViolations);
   }
 }
 
 function highlightRegion(v) {
-  // Simple highlight: scroll SVG into view.
   view2d.scrollIntoView({ behavior: "smooth" });
 }
 
@@ -309,7 +355,6 @@ document.getElementById("btn-share").addEventListener("click", () => {
 // ---------------------------------------------------------------------------
 function encodePlan(plan) {
   const json = JSON.stringify(plan);
-  // Simple base64 for now (no compression — browser decompression needs DecompressionStream).
   return btoa(unescape(encodeURIComponent(json)));
 }
 
@@ -330,201 +375,10 @@ function checkHash() {
       editor.value = JSON.stringify(plan, null, 2);
       scorePlan();
     } else {
-      showSchemaError("Could not decode plan from URL. It may be corrupt or use a format this browser cannot decompress.");
+      showSchemaError("Could not decode plan from URL. It may be corrupt.");
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Reviewer
-// ---------------------------------------------------------------------------
-const LABELS_KEY = "floors_labels_v1";
-
-function loadLabels() {
-  try {
-    return JSON.parse(localStorage.getItem(LABELS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveLabels(labels) {
-  try {
-    localStorage.setItem(LABELS_KEY, JSON.stringify(labels));
-  } catch {
-    // ignore
-  }
-}
-
-let currentReviewPlan = null;
-let currentAutoResult = null;
-let selectedLabel = null;
-let selectedReasons = new Set();
-
-document.getElementById("btn-pass").addEventListener("click", () => {
-  selectedLabel = "pass";
-  updateLabelButtons();
-});
-document.getElementById("btn-fail").addEventListener("click", () => {
-  selectedLabel = "fail";
-  updateLabelButtons();
-});
-document.getElementById("btn-skip").addEventListener("click", () => {
-  selectedLabel = "skip";
-  updateLabelButtons();
-});
-
-function updateLabelButtons() {
-  document.getElementById("btn-pass").style.opacity = selectedLabel === "pass" ? 1 : 0.5;
-  document.getElementById("btn-fail").style.opacity = selectedLabel === "fail" ? 1 : 0.5;
-  document.getElementById("btn-skip").style.opacity = selectedLabel === "skip" ? 1 : 0.5;
-}
-
-// Keyboard shortcuts.
-document.addEventListener("keydown", (e) => {
-  if (document.querySelector("#tab-reviewer.active")) {
-    if (e.key === "p" || e.key === "P") { selectedLabel = "pass"; updateLabelButtons(); }
-    if (e.key === "f" || e.key === "F") { selectedLabel = "fail"; updateLabelButtons(); }
-    if (e.key === "s" || e.key === "S") { selectedLabel = "skip"; updateLabelButtons(); }
-  }
-});
-
-document.getElementById("btn-save-label").addEventListener("click", () => {
-  if (!currentReviewPlan || !selectedLabel) return;
-
-  const label = {
-    plan_id: currentReviewPlan.id,
-    plan: currentReviewPlan,
-    auto: currentAutoResult ? {
-      passed: currentAutoResult.passed,
-      score: currentAutoResult.score,
-      rules: currentAutoResult.violations.map((v) => v.rule),
-    } : null,
-    human: {
-      label: selectedLabel,
-      reasons: [...selectedReasons],
-      note: document.getElementById("review-note").value,
-    },
-    agree: currentAutoResult ? (currentAutoResult.passed === (selectedLabel === "pass")) : null,
-    labelled_at: new Date().toISOString(),
-  };
-
-  const labels = loadLabels();
-  labels.push(label);
-  saveLabels(labels);
-  updateReviewerStats();
-
-  // Show auto verdict.
-  if (currentAutoResult) {
-    const verdictEl = document.getElementById("auto-verdict");
-    verdictEl.classList.remove("hidden");
-    verdictEl.innerHTML = `<strong>Auto verdict:</strong> ${currentAutoResult.passed ? "PASS" : "FAIL"} (score ${currentAutoResult.score})`;
-  }
-});
-
-function updateReviewerStats() {
-  const labels = loadLabels();
-  document.getElementById("label-count").textContent = `Labels: ${labels.length}`;
-
-  const withAgree = labels.filter((l) => l.agree !== null);
-  if (withAgree.length > 0) {
-    const agreed = withAgree.filter((l) => l.agree).length;
-    const rate = ((agreed / withAgree.length) * 100).toFixed(0);
-    document.getElementById("agreement-rate").textContent = `Agreement: ${rate}%`;
-  }
-}
-
-// Load seeds into reviewer queue.
-document.getElementById("btn-load-seeds").addEventListener("click", async () => {
-  const resp = await fetch(`${API}/api/seeds`);
-  const seeds = await resp.json();
-  if (seeds.length > 0) {
-    const detail = await fetch(`${API}/api/seeds/${seeds[0].id}`);
-    const plan = await detail.json();
-    loadPlanIntoReviewer(plan);
-  }
-});
-
-async function loadPlanIntoReviewer(plan) {
-  currentReviewPlan = plan;
-  selectedLabel = null;
-  selectedReasons.clear();
-  updateLabelButtons();
-  document.getElementById("review-note").value = "";
-  document.getElementById("auto-verdict").classList.add("hidden");
-  document.getElementById("reason-chips").innerHTML = "";
-
-  // Write plan into the editor (for shared scorePlan logic).
-  editor.value = JSON.stringify(plan, null, 2);
-
-  // Fetch score + render, then show SVG in reviewer view.
-  const [scoreResp, renderResp] = await Promise.all([
-    fetch(`${API}/api/score`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(plan),
-    }),
-    fetch(`${API}/api/render`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(plan),
-    }),
-  ]);
-
-  if (scoreResp.ok) {
-    currentAutoResult = await scoreResp.json();
-    const renderData = await renderResp.json();
-
-    // Render SVG into the reviewer-plan div.
-    const reviewerPlan = document.getElementById("reviewer-plan");
-    reviewerPlan.innerHTML = renderData.svg;
-
-    // Also render into the editor's 2D view (if user navigates there).
-    hideSchemaError();
-    renderResults(currentAutoResult, renderData.svg);
-
-    // Build reason chips.
-    const rules = [...new Set(currentAutoResult.violations.map((v) => v.rule))];
-    const chipsEl = document.getElementById("reason-chips");
-    rules.forEach((r) => {
-      const btn = document.createElement("button");
-      btn.textContent = r;
-      btn.addEventListener("click", () => {
-        if (selectedReasons.has(r)) {
-          selectedReasons.delete(r);
-          btn.classList.remove("selected");
-        } else {
-          selectedReasons.add(r);
-          btn.classList.add("selected");
-        }
-      });
-      chipsEl.appendChild(btn);
-    });
-  }
-}
-
-document.getElementById("btn-export").addEventListener("click", () => {
-  const labels = loadLabels();
-  if (labels.length === 0) {
-    alert("No labels to export.");
-    return;
-  }
-  const jsonl = labels.map((l) => JSON.stringify(l)).join("\n");
-  const blob = new Blob([jsonl], { type: "application/jsonl" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "labels.jsonl";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-document.getElementById("btn-clear-labels").addEventListener("click", () => {
-  if (confirm("Clear all labels?")) {
-    saveLabels([]);
-    updateReviewerStats();
-  }
-});
 
 // ---------------------------------------------------------------------------
 // Batch eval
@@ -573,21 +427,111 @@ document.getElementById("btn-run-eval").addEventListener("click", async () => {
   }
 
   const report = await resp.json();
-  resultsEl.innerHTML = `
-    <div class="batch-summary">
-      <div class="stat"><div class="value">${report.n}</div><div class="label">Plans</div></div>
-      <div class="stat"><div class="value">${(report.pass_rate * 100).toFixed(0)}%</div><div class="label">Pass rate</div></div>
-      <div class="stat"><div class="value">${report.mean_score.toFixed(2)}</div><div class="label">Mean score</div></div>
-    </div>
-    <h3>Per-rule failures</h3>
-    <ul>${Object.entries(report.per_rule).map(([k, v]) => `<li>${k}: ${v}</li>`).join("")}</ul>
-    <h3>Results</h3>
-    <table border="1" cellpadding="4" style="width:100%;font-size:0.85rem;">
-      <tr><th>Plan</th><th>Passed</th><th>Score</th><th>Violations</th></tr>
-      ${report.results.map((r) => `<tr><td>${r.plan_id}</td><td>${r.passed ? "✓" : "✗"}</td><td>${r.score}</td><td>${r.violations.length}</td></tr>`).join("")}
-    </table>
-  `;
+  renderBatchResults(resultsEl, report);
 });
+
+function renderBatchResults(el, report) {
+  // Rule descriptions for the per-rule breakdown.
+  const ruleDescriptions = {
+    R01: "No room overlap",
+    R02: "Has entrance",
+    R03: "All rooms reachable",
+    R04: "Habitable rooms have windows",
+    R05: "Doors on real walls",
+    R06: "Windows on exterior walls",
+    R07: "Minimum room areas",
+    R08: "Plausible proportions",
+    R09: "Door widths",
+    R10: "Bathroom privacy",
+  };
+
+  // Summary stats.
+  let html = `
+    <div class="batch-summary">
+      <div class="stat"><div class="stat-num">${report.n}</div><div class="stat-label">PLANS</div></div>
+      <div class="stat"><div class="stat-num">${(report.pass_rate * 100).toFixed(0)}%</div><div class="stat-label">PASS RATE</div></div>
+      <div class="stat"><div class="stat-num">${report.mean_score.toFixed(2)}</div><div class="stat-label">MEAN SCORE</div></div>
+    </div>
+  `;
+
+  // Per-rule breakdown with descriptions.
+  const ruleEntries = Object.entries(report.per_rule).sort((a, b) => a[0].localeCompare(b[0]));
+  if (ruleEntries.length > 0) {
+    html += `<h3>PER-RULE FAILURES</h3><ul class="batch-rule-list">`;
+    for (const [ruleId, count] of ruleEntries) {
+      const desc = ruleDescriptions[ruleId] || ruleId;
+      html += `<li><span class="rule-id">${ruleId}</span> <span class="rule-desc">${desc}</span> <span class="rule-count">${count}</span></li>`;
+    }
+    html += `</ul>`;
+  }
+
+  // Per-plan table with expandable details.
+  html += `<h3>PER-PLAN RESULTS</h3>`;
+  html += `<table><thead><tr><th>PLAN</th><th>STATUS</th><th>SCORE</th><th>DETAILS</th></tr></thead><tbody>`;
+  report.results.forEach((r, idx) => {
+    const status = r.passed ? "PASS" : "FAIL";
+    const statusClass = r.passed ? "batch-pass" : "batch-fail";
+    const errorCount = (r.errors || []).length;
+    const warnCount = (r.warnings || []).length;
+    const detailText = r.passed
+      ? (warnCount > 0 ? `${warnCount} warning${warnCount > 1 ? "s" : ""}` : "Clean")
+      : `${errorCount} error${errorCount > 1 ? "s" : ""}${warnCount > 0 ? `, ${warnCount} warning${warnCount > 1 ? "s" : ""}` : ""}`;
+
+    html += `<tr>
+      <td class="batch-plan-id">${r.plan_id}</td>
+      <td><span class="batch-status ${statusClass}">${status}</span></td>
+      <td>${r.score}</td>
+      <td>
+        <button class="btn btn-ghost batch-toggle-detail" data-idx="${idx}">${detailText}</button>
+        <div class="batch-detail hidden" id="batch-detail-${idx}">
+          ${renderPlanDetail(r)}
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+
+  el.innerHTML = html;
+
+  // Wire up expand/collapse buttons.
+  el.querySelectorAll(".batch-toggle-detail").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = btn.dataset.idx;
+      const detail = document.getElementById(`batch-detail-${idx}`);
+      detail.classList.toggle("hidden");
+      btn.textContent = detail.classList.contains("hidden")
+        ? btn.textContent
+        : "HIDE";
+    });
+  });
+}
+
+function renderPlanDetail(r) {
+  let html = "";
+  if (r.errors && r.errors.length > 0) {
+    html += `<div class="detail-section"><span class="detail-heading">ERRORS</span><ul>`;
+    r.errors.forEach((msg) => {
+      const ruleId = msg.split(":")[0];
+      const text = msg.slice(ruleId.length + 2);
+      html += `<li><span class="rule-id">${ruleId}</span> ${text}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+  if (r.warnings && r.warnings.length > 0) {
+    html += `<div class="detail-section"><span class="detail-heading">WARNINGS</span><ul>`;
+    r.warnings.forEach((msg) => {
+      const ruleId = msg.split(":")[0];
+      const text = msg.slice(ruleId.length + 2);
+      html += `<li><span class="rule-id">${ruleId}</span> ${text}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+  if (!html) {
+    html = `<p class="notice">No violations.</p>`;
+  }
+  return html;
+}
 
 // ---------------------------------------------------------------------------
 // About
@@ -599,7 +543,7 @@ async function loadAbout() {
   cat.innerHTML = `
     <table>
       <tr><th>ID</th><th>Severity</th><th>Description</th></tr>
-      ${data.rules.map((r) => `<tr><td>${r.id}</td><td>${r.severity}</td><td>${r.description}</td></tr>`).join("")}
+      ${data.rules.map((r) => `<tr class="${r.severity}"><td>${r.id}</td><td>${r.severity.toUpperCase()}</td><td>${r.description}</td></tr>`).join("")}
     </table>
   `;
 
@@ -607,7 +551,7 @@ async function loadAbout() {
   document.getElementById("mcp-config").textContent = JSON.stringify(
     {
       mcpServers: {
-        "floor-plans": {
+        "floors": {
           url: mcpUrl,
         },
       },
@@ -622,5 +566,4 @@ async function loadAbout() {
 // ---------------------------------------------------------------------------
 loadSeeds();
 loadAbout();
-updateReviewerStats();
 checkHash();

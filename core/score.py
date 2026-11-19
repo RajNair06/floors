@@ -40,9 +40,15 @@ def score(plan: Plan) -> ScoreResult:
     for v in violations:
         breakdown[v.rule] = breakdown.get(v.rule, 0) + 1
 
+    # Plain-text error/warning arrays with rule prefix.
+    errors_list = [f"{v.rule}: {v.message}" for v in violations if v.severity == "error"]
+    warnings_list = [f"{v.rule}: {v.message}" for v in violations if v.severity == "warning"]
+
     return ScoreResult(
         passed=n_errors == 0,
         score=round(final_score, 3),
+        errors=errors_list or None,
+        warnings=warnings_list or None,
         breakdown=breakdown,
         violations=violations,
     )
@@ -62,6 +68,8 @@ def evaluate(plans: list[Plan]) -> EvalReport:
                 "plan_id": plan.id,
                 "passed": result.passed,
                 "score": result.score,
+                "errors": result.errors,
+                "warnings": result.warnings,
                 "breakdown": result.breakdown,
                 "violations": [v.model_dump() for v in result.violations],
             }

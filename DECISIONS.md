@@ -35,12 +35,12 @@ Running log of choices made during the build. Feeds the final write-up.
 
 ## Frontend
 
-- **No build step.** Plain HTML, CSS, ES modules. Three.js vendored (when added) to avoid CDN dependency.
-- **Labels stored client-side only.** localStorage with try/catch wrapping, exported as JSONL via Blob. Nothing reaches the server.
-- **Auto verdict shown after human label.** Prevents anchoring bias in the reviewer.
-- **Agreement rate displayed.** The ratio of human-vs-auto agreement is the eval bench's main output.
+- **No build step.** Plain HTML, CSS, ES modules. Three.js vendored to avoid CDN dependency.
 - **Swiss International Typographic Style.** Black/white/red palette, Inter grotesque, uppercase headings, 0px radius, thick borders, grid/dot/diagonal texture patterns. The design recedes to let the content speak — no gradients, no shadows, no rounded corners. Red (#FF3000) is used only as a functional signal, never as decoration.
-- **Landing page as default view.** The site opens to a home page that explains what Floors is, how to use it, and what each component does. Users navigate to Editor/Reviewer/Batch/About from there. The input→output channel is not the first thing a visitor sees.
+- **Landing page as default view.** The site opens to a home page that explains what Floors is, how to use it, and what each component does. Users navigate to Editor/Batch/About from there. The input→output channel is not the first thing a visitor sees.
+- **No reviewer UI.** Removed to simplify. Three surfaces remain: Editor, Batch, About.
+- **errors/warnings as nullable string arrays.** ScoreResult exposes `errors: list[str] | null` and `warnings: list[str] | null` with rule-prefixed messages (e.g. `"R04: 'Bedroom' has no window on an exterior wall"`). No severity labels in the UI — violations are grouped under "ERRORS" and "WARNINGS" headings instead.
+- **Batch shows full error details per plan.** Each plan row is expandable to reveal the specific rule-prefixed error and warning messages, so users never need to look up what "R10" means.
 
 ## MCP
 
