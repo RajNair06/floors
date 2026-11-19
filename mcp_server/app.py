@@ -48,7 +48,14 @@ def _strip_ids(result_dict: dict) -> dict:
 
 def _wrap_result(plan):
     """Wrap a plan with score and viewer URL."""
+    # Re-parse to catch any schema errors introduced by the operation
     plan_dict = plan_to_dict(plan)
+    try:
+        plan = parse_plan(plan_dict)
+    except ValueError as e:
+        detail = e.args[0] if e.args else {"error": "schema", "details": []}
+        return {"error": detail}
+    
     score_result = score(plan)
     base = _base_url()
     try:
