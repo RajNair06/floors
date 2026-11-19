@@ -1,0 +1,136 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_01",
+    "title": "Simple 2-bedroom apartment",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [
+        {
+            "id": "r1",
+            "type": "living",
+            "name": "Living room",
+            "x": 0,
+            "y": 0,
+            "w": 5.0,
+            "h": 4.5
+        },
+        {
+            "id": "r2",
+            "type": "kitchen",
+            "name": "Kitchen",
+            "x": 5.0,
+            "y": 0,
+            "w": 3.5,
+            "h": 3.0
+        },
+        {
+            "id": "r3",
+            "type": "bedroom",
+            "name": "Bedroom 1",
+            "x": 0,
+            "y": 4.5,
+            "w": 4.0,
+            "h": 3.5
+        },
+        {
+            "id": "r4",
+            "type": "bedroom",
+            "name": "Bedroom 2",
+            "x": 4.0,
+            "y": 4.5,
+            "w": 3.5,
+            "h": 3.5
+        },
+        {
+            "id": "r5",
+            "type": "bathroom",
+            "name": "Bathroom",
+            "x": 5.0,
+            "y": 3.0,
+            "w": 3.5,
+            "h": 1.5
+        }
+    ],
+    "doors": [
+        {
+            "id": "d1",
+            "from": "r1",
+            "to": "outside",
+            "wall": "N",
+            "offset": 1.5,
+            "width": 1.0
+        },
+        {
+            "id": "d2",
+            "from": "r1",
+            "to": "r2",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 0.9
+        },
+        {
+            "id": "d3",
+            "from": "r1",
+            "to": "r3",
+            "wall": "S",
+            "offset": 1.0,
+            "width": 0.8
+        },
+        {
+            "id": "d4",
+            "from": "r3",
+            "to": "r4",
+            "wall": "E",
+            "offset": 0.8,
+            "width": 0.8
+        },
+        {
+            "id": "d5",
+            "from": "r2",
+            "to": "r5",
+            "wall": "S",
+            "offset": 1.0,
+            "width": 0.7
+        }
+    ],
+    "windows": [
+        {
+            "id": "w1",
+            "room": "r1",
+            "wall": "W",
+            "offset": 1.0,
+            "width": 2.0
+        },
+        {
+            "id": "w2",
+            "room": "r2",
+            "wall": "N",
+            "offset": 0.5,
+            "width": 1.5
+        },
+        {
+            "id": "w3",
+            "room": "r3",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 1.5
+        },
+        {
+            "id": "w4",
+            "room": "r4",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 1.2
+        },
+        {
+            "id": "w5",
+            "room": "r5",
+            "wall": "E",
+            "offset": 0.3,
+            "width": 0.8
+        }
+    ],
+    "expected_failures": [
+        "R10"
+    ]
+}

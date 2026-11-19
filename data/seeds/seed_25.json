@@ -1,0 +1,57 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_25",
+    "title": "Study without window",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [
+        {
+            "id": "r1",
+            "type": "living",
+            "name": "Living",
+            "x": 0,
+            "y": 0,
+            "w": 5.0,
+            "h": 4.0
+        },
+        {
+            "id": "r2",
+            "type": "study",
+            "name": "Study",
+            "x": 5.0,
+            "y": 0,
+            "w": 3.0,
+            "h": 3.0
+        }
+    ],
+    "doors": [
+        {
+            "id": "d1",
+            "from": "r1",
+            "to": "outside",
+            "wall": "N",
+            "offset": 1.5,
+            "width": 1.0
+        },
+        {
+            "id": "d2",
+            "from": "r1",
+            "to": "r2",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 0.8
+        }
+    ],
+    "windows": [
+        {
+            "id": "w1",
+            "room": "r1",
+            "wall": "W",
+            "offset": 1.0,
+            "width": 1.5
+        }
+    ],
+    "expected_failures": [
+        "R04"
+    ]
+}

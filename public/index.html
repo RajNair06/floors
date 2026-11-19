@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Floor-Plan Checker</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Floor-Plan Checker</h1>
+    <nav>
+      <button class="tab active" data-tab="editor">Editor</button>
+      <button class="tab" data-tab="reviewer">Reviewer</button>
+      <button class="tab" data-tab="batch">Batch</button>
+      <button class="tab" data-tab="about">About</button>
+    </nav>
+  </header>
+
+  <!-- Editor tab -->
+  <main id="tab-editor" class="tab-content active">
+    <div class="editor-layout">
+      <aside class="editor-panel">
+        <div class="toolbar">
+          <label for="seed-picker">Load seed:</label>
+          <select id="seed-picker"><option value="">— pick —</option></select>
+          <button id="btn-format">Format</button>
+          <button id="btn-share">Copy share link</button>
+        </div>
+        <textarea id="plan-editor" spellcheck="false" placeholder="Paste floor plan JSON here…"></textarea>
+        <div id="schema-errors" class="error-box"></div>
+      </aside>
+      <section class="view-panel">
+        <div class="view-tabs">
+          <button class="view-tab active" data-view="2d">2D</button>
+          <button class="view-tab" data-view="3d">3D</button>
+        </div>
+        <div id="view-2d" class="view-content active"></div>
+        <div id="view-3d" class="view-content"></div>
+        <div id="violation-panel">
+          <div id="score-bar"></div>
+          <ul id="violations-list"></ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Reviewer tab -->
+  <main id="tab-reviewer" class="tab-content">
+    <div class="reviewer-layout">
+      <div id="reviewer-plan" class="reviewer-view"></div>
+      <div class="reviewer-controls">
+        <h2>Review</h2>
+        <p>Label this plan before seeing the automatic verdict.</p>
+        <div class="label-buttons">
+          <button id="btn-pass" class="btn-pass">Pass (P)</button>
+          <button id="btn-fail" class="btn-fail">Fail (F)</button>
+          <button id="btn-skip" class="btn-skip">Skip (S)</button>
+        </div>
+        <div id="reason-chips"></div>
+        <textarea id="review-note" placeholder="Optional note…"></textarea>
+        <button id="btn-save-label">Save label</button>
+        <div id="auto-verdict" class="hidden"></div>
+        <div class="reviewer-stats">
+          <span id="agreement-rate">Agreement: —</span>
+          <span id="label-count">Labels: 0</span>
+        </div>
+        <div>
+          <button id="btn-export">Export JSONL</button>
+          <button id="btn-clear-labels">Clear labels</button>
+        </div>
+        <div id="reviewer-queue">
+          <button id="btn-load-seeds">Load all seeds</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Batch tab -->
+  <main id="tab-batch" class="tab-content">
+    <h2>Batch Evaluation (max 50 plans)</h2>
+    <button id="btn-load-all-seeds">Load all seeds</button>
+    <textarea id="batch-input" placeholder="Paste a JSON array of plans…"></textarea>
+    <button id="btn-run-eval">Run eval</button>
+    <div id="batch-results"></div>
+  </main>
+
+  <!-- About tab -->
+  <main id="tab-about" class="tab-content">
+    <h2>Rules</h2>
+    <div id="rule-catalogue"></div>
+    <h2>MCP Connection</h2>
+    <p>Connect an MCP client to this deployment:</p>
+    <pre id="mcp-config"></pre>
+    <h2>Assumptions</h2>
+    <ul>
+      <li>All coordinates in metres, y grows downward.</li>
+      <li>Wall thickness is ignored; rooms share edges exactly.</li>
+      <li>Only axis-aligned rectangular rooms.</li>
+      <li>Any exterior door counts as an entrance.</li>
+      <li>Thresholds are sensible heuristics, not legal code.</li>
+    </ul>
+  </main>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

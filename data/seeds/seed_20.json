@@ -1,0 +1,11 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_20",
+    "title": "Empty plan",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [],
+    "doors": [],
+    "windows": [],
+    "expected_failures": ["R02", "R08"]
+}

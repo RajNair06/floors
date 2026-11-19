@@ -1,0 +1,105 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_17",
+    "title": "LLM-style output with subtle errors",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [
+        {
+            "id": "r1",
+            "type": "living",
+            "name": "Living Room",
+            "x": 0,
+            "y": 0,
+            "w": 5.5,
+            "h": 4.2
+        },
+        {
+            "id": "r2",
+            "type": "kitchen",
+            "name": "Kitchen",
+            "x": 5.5,
+            "y": 0,
+            "w": 3.0,
+            "h": 3.0
+        },
+        {
+            "id": "r3",
+            "type": "bedroom",
+            "name": "Bedroom",
+            "x": 0,
+            "y": 4.2,
+            "w": 4.0,
+            "h": 3.5
+        },
+        {
+            "id": "r4",
+            "type": "bathroom",
+            "name": "Bathroom",
+            "x": 5.5,
+            "y": 3.0,
+            "w": 2.0,
+            "h": 2.5
+        }
+    ],
+    "doors": [
+        {
+            "id": "d1",
+            "from": "r1",
+            "to": "outside",
+            "wall": "N",
+            "offset": 2.0,
+            "width": 0.95
+        },
+        {
+            "id": "d2",
+            "from": "r1",
+            "to": "r2",
+            "wall": "E",
+            "offset": 0.8,
+            "width": 0.85
+        },
+        {
+            "id": "d3",
+            "from": "r1",
+            "to": "r3",
+            "wall": "S",
+            "offset": 1.2,
+            "width": 0.8
+        },
+        {
+            "id": "d4",
+            "from": "r2",
+            "to": "r4",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 0.75
+        }
+    ],
+    "windows": [
+        {
+            "id": "w1",
+            "room": "r1",
+            "wall": "W",
+            "offset": 1.0,
+            "width": 1.8
+        },
+        {
+            "id": "w2",
+            "room": "r2",
+            "wall": "N",
+            "offset": 0.5,
+            "width": 1.2
+        },
+        {
+            "id": "w3",
+            "room": "r3",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 1.5
+        }
+    ],
+    "expected_failures": [
+        "R10"
+    ]
+}

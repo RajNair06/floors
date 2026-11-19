@@ -1,0 +1,63 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_16",
+    "title": "Multiple violations",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [
+        {
+            "id": "r1",
+            "type": "living",
+            "name": "Living",
+            "x": 0,
+            "y": 0,
+            "w": 5.0,
+            "h": 4.0
+        },
+        {
+            "id": "r2",
+            "type": "bedroom",
+            "name": "Tiny bedroom",
+            "x": 3.0,
+            "y": 0,
+            "w": 2.0,
+            "h": 2.5
+        },
+        {
+            "id": "r3",
+            "type": "study",
+            "name": "Study",
+            "x": 20.0,
+            "y": 0,
+            "w": 3.0,
+            "h": 3.0
+        }
+    ],
+    "doors": [
+        {
+            "id": "d1",
+            "from": "r1",
+            "to": "r2",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 0.5
+        }
+    ],
+    "windows": [
+        {
+            "id": "w1",
+            "room": "r1",
+            "wall": "E",
+            "offset": 1.0,
+            "width": 1.0
+        }
+    ],
+    "expected_failures": [
+        "R01",
+        "R02",
+        "R04",
+        "R05",
+        "R07",
+        "R09"
+    ]
+}

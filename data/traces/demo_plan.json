@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "id": "demo",
+  "units": "m",
+  "ceiling_height": 2.7,
+  "rooms": [
+    {
+      "id": "r1",
+      "type": "living",
+      "name": "Living Room",
+      "x": 0.0,
+      "y": 0.0,
+      "w": 5.0,
+      "h": 4.0
+    },
+    {
+      "id": "r2",
+      "type": "bedroom",
+      "name": "Bedroom",
+      "x": 5.0,
+      "y": 0.0,
+      "w": 3.5,
+      "h": 4.0
+    },
+    {
+      "id": "r3",
+      "type": "bathroom",
+      "name": "Bathroom",
+      "x": 8.5,
+      "y": 0.0,
+      "w": 2.5,
+      "h": 2.5
+    }
+  ],
+  "doors": [
+    {
+      "id": "d1",
+      "from": "r1",
+      "to": "r2",
+      "wall": "E",
+      "offset": 1.55,
+      "width": 0.9
+    },
+    {
+      "id": "d2",
+      "from": "r2",
+      "to": "r3",
+      "wall": "E",
+      "offset": 0.8,
+      "width": 0.9
+    },
+    {
+      "id": "d3",
+      "from": "r1",
+      "to": "outside",
+      "wall": "N",
+      "offset": 2.0,
+      "width": 1.0
+    }
+  ],
+  "windows": [
+    {
+      "id": "w1",
+      "room": "r1",
+      "wall": "W",
+      "offset": 1.25,
+      "width": 1.5
+    },
+    {
+      "id": "w2",
+      "room": "r2",
+      "wall": "N",
+      "offset": 1.15,
+      "width": 1.2
+    },
+    {
+      "id": "w3",
+      "room": "r3",
+      "wall": "E",
+      "offset": 0.85,
+      "width": 0.8
+    }
+  ]
+}

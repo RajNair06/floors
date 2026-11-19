@@ -1,0 +1,20 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_19",
+    "title": "Exterior door on interior wall",
+    "units": "m",
+    "ceiling_height": 2.7,
+    "rooms": [
+        {"id": "r1", "type": "living", "name": "Living", "x": 0, "y": 0, "w": 5.0, "h": 4.0},
+        {"id": "r2", "type": "bedroom", "name": "Bedroom", "x": 5.0, "y": 0, "w": 3.5, "h": 4.0}
+    ],
+    "doors": [
+        {"id": "d1", "from": "r1", "to": "outside", "wall": "E", "offset": 1.5, "width": 1.0},
+        {"id": "d2", "from": "r1", "to": "r2", "wall": "E", "offset": 1.5, "width": 0.8}
+    ],
+    "windows": [
+        {"id": "w1", "room": "r1", "wall": "N", "offset": 1.0, "width": 1.5},
+        {"id": "w2", "room": "r2", "wall": "N", "offset": 0.5, "width": 1.2}
+    ],
+    "expected_failures": ["R05"]
+}

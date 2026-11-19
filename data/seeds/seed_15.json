@@ -1,0 +1,228 @@
+{
+    "schema_version": "1.0",
+    "id": "seed_15",
+    "title": "Luxury 3-bedroom",
+    "units": "m",
+    "ceiling_height": 3.0,
+    "rooms": [
+        {
+            "id": "r1",
+            "type": "living",
+            "name": "Living room",
+            "x": 0,
+            "y": 0,
+            "w": 7.0,
+            "h": 5.0
+        },
+        {
+            "id": "r2",
+            "type": "dining",
+            "name": "Dining room",
+            "x": 7.0,
+            "y": 0,
+            "w": 4.0,
+            "h": 4.0
+        },
+        {
+            "id": "r3",
+            "type": "kitchen",
+            "name": "Kitchen",
+            "x": 7.0,
+            "y": 4.0,
+            "w": 4.0,
+            "h": 2.5
+        },
+        {
+            "id": "r4",
+            "type": "hallway",
+            "name": "Hallway",
+            "x": 0,
+            "y": 5.0,
+            "w": 7.0,
+            "h": 1.5
+        },
+        {
+            "id": "r5",
+            "type": "bedroom",
+            "name": "Master bedroom",
+            "x": 0,
+            "y": 6.5,
+            "w": 5.0,
+            "h": 4.5
+        },
+        {
+            "id": "r6",
+            "type": "bedroom",
+            "name": "Bedroom 2",
+            "x": 5.0,
+            "y": 6.5,
+            "w": 3.5,
+            "h": 4.5
+        },
+        {
+            "id": "r7",
+            "type": "bedroom",
+            "name": "Bedroom 3",
+            "x": 8.5,
+            "y": 6.5,
+            "w": 3.5,
+            "h": 4.5
+        },
+        {
+            "id": "r8",
+            "type": "bathroom",
+            "name": "Master bath",
+            "x": 8.5,
+            "y": 11.0,
+            "w": 2.0,
+            "h": 2.5
+        },
+        {
+            "id": "r9",
+            "type": "bathroom",
+            "name": "Bathroom 2",
+            "x": 10.5,
+            "y": 11.0,
+            "w": 2.5,
+            "h": 2.5
+        }
+    ],
+    "doors": [
+        {
+            "id": "d1",
+            "from": "r1",
+            "to": "outside",
+            "wall": "N",
+            "offset": 2.5,
+            "width": 1.2
+        },
+        {
+            "id": "d2",
+            "from": "r1",
+            "to": "r2",
+            "wall": "E",
+            "offset": 1.5,
+            "width": 1.0
+        },
+        {
+            "id": "d3",
+            "from": "r1",
+            "to": "r4",
+            "wall": "S",
+            "offset": 3.0,
+            "width": 0.9
+        },
+        {
+            "id": "d4",
+            "from": "r2",
+            "to": "r3",
+            "wall": "S",
+            "offset": 1.5,
+            "width": 0.8
+        },
+        {
+            "id": "d5",
+            "from": "r4",
+            "to": "r5",
+            "wall": "S",
+            "offset": 1.5,
+            "width": 0.9
+        },
+        {
+            "id": "d6",
+            "from": "r4",
+            "to": "r6",
+            "wall": "S",
+            "offset": 5.0,
+            "width": 0.8
+        },
+        {
+            "id": "d7",
+            "from": "r3",
+            "to": "r7",
+            "wall": "S",
+            "offset": 1.0,
+            "width": 0.8
+        },
+        {
+            "id": "d8",
+            "from": "r7",
+            "to": "r8",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 0.7
+        },
+        {
+            "id": "d9",
+            "from": "r7",
+            "to": "r9",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 0.8
+        }
+    ],
+    "windows": [
+        {
+            "id": "w1",
+            "room": "r1",
+            "wall": "W",
+            "offset": 1.0,
+            "width": 3.0
+        },
+        {
+            "id": "w2",
+            "room": "r2",
+            "wall": "N",
+            "offset": 0.5,
+            "width": 2.0
+        },
+        {
+            "id": "w3",
+            "room": "r3",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 1.5
+        },
+        {
+            "id": "w4",
+            "room": "r5",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 2.5
+        },
+        {
+            "id": "w5",
+            "room": "r6",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 1.5
+        },
+        {
+            "id": "w6",
+            "room": "r7",
+            "wall": "S",
+            "offset": 0.5,
+            "width": 1.5
+        },
+        {
+            "id": "w7",
+            "room": "r8",
+            "wall": "S",
+            "offset": 0.3,
+            "width": 1.0
+        },
+        {
+            "id": "w8",
+            "room": "r9",
+            "wall": "E",
+            "offset": 0.5,
+            "width": 1.0
+        }
+    ],
+    "expected_failures": [
+        "R04",
+        "R05",
+        "R06",
+        "R08"
+    ]
+}
