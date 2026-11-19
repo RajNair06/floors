@@ -265,16 +265,10 @@ function renderResults(data, svg) {
         const li = document.createElement("li");
         li.className = "violation error";
         const v = violationMap[msg] || {};
-        const ruleId = msg.split(":")[0] || "";
-        const messageText = msg.slice(ruleId.length + 2);
-        const roomTags = (v.room_ids || [])
-          .map((rid) => `<span class="room-tag">${rid}</span>`)
-          .join("");
+        // Strip the "Rxx: " prefix — show plain message.
+        const colonIdx = msg.indexOf(": ");
+        const messageText = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
         li.innerHTML = `
-          <div class="violation-header">
-            <span class="rule-id">${ruleId}</span>
-            ${roomTags}
-          </div>
           <p class="violation-message">${messageText}</p>
           ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
         `;
@@ -293,16 +287,9 @@ function renderResults(data, svg) {
         const li = document.createElement("li");
         li.className = "violation warning";
         const v = violationMap[msg] || {};
-        const ruleId = msg.split(":")[0] || "";
-        const messageText = msg.slice(ruleId.length + 2);
-        const roomTags = (v.room_ids || [])
-          .map((rid) => `<span class="room-tag">${rid}</span>`)
-          .join("");
+        const colonIdx = msg.indexOf(": ");
+        const messageText = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
         li.innerHTML = `
-          <div class="violation-header">
-            <span class="rule-id">${ruleId}</span>
-            ${roomTags}
-          </div>
           <p class="violation-message">${messageText}</p>
           ${v.suggested_fix ? `<p class="violation-fix">${v.suggested_fix}</p>` : ""}
         `;
@@ -454,57 +441,33 @@ function renderBatchResults(el, report) {
     </div>
   `;
 
-  // Per-rule breakdown with descriptions.
+  // Per-rule breakdown.
   const ruleEntries = Object.entries(report.per_rule).sort((a, b) => a[0].localeCompare(b[0]));
   if (ruleEntries.length > 0) {
     html += `<h3>PER-RULE FAILURES</h3><ul class="batch-rule-list">`;
     for (const [ruleId, count] of ruleEntries) {
       const desc = ruleDescriptions[ruleId] || ruleId;
-      html += `<li><span class="rule-id">${ruleId}</span> <span class="rule-desc">${desc}</span> <span class="rule-count">${count}</span></li>`;
+      html += `<li><span class="rule-desc">${desc}</span> <span class="rule-count">${count}</span></li>`;
     }
     html += `</ul>`;
   }
 
-  // Per-plan table with expandable details.
+  // Per-plan table with inline details.
   html += `<h3>PER-PLAN RESULTS</h3>`;
-  html += `<table><thead><tr><th>PLAN</th><th>STATUS</th><th>SCORE</th><th>DETAILS</th></tr></thead><tbody>`;
-  report.results.forEach((r, idx) => {
+  html += `<table><thead><tr><th>PLAN</th><th>STATUS</th><th>SCORE</th><th>ISSUES</th></tr></thead><tbody>`;
+  report.results.forEach((r) => {
     const status = r.passed ? "PASS" : "FAIL";
     const statusClass = r.passed ? "batch-pass" : "batch-fail";
-    const errorCount = (r.errors || []).length;
-    const warnCount = (r.warnings || []).length;
-    const detailText = r.passed
-      ? (warnCount > 0 ? `${warnCount} warning${warnCount > 1 ? "s" : ""}` : "Clean")
-      : `${errorCount} error${errorCount > 1 ? "s" : ""}${warnCount > 0 ? `, ${warnCount} warning${warnCount > 1 ? "s" : ""}` : ""}`;
-
     html += `<tr>
       <td class="batch-plan-id">${r.plan_id}</td>
       <td><span class="batch-status ${statusClass}">${status}</span></td>
       <td>${r.score}</td>
-      <td>
-        <button class="btn btn-ghost batch-toggle-detail" data-idx="${idx}">${detailText}</button>
-        <div class="batch-detail hidden" id="batch-detail-${idx}">
-          ${renderPlanDetail(r)}
-        </div>
-      </td>
+      <td>${renderPlanDetail(r)}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
 
   el.innerHTML = html;
-
-  // Wire up expand/collapse buttons.
-  el.querySelectorAll(".batch-toggle-detail").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = btn.dataset.idx;
-      const detail = document.getElementById(`batch-detail-${idx}`);
-      detail.classList.toggle("hidden");
-      btn.textContent = detail.classList.contains("hidden")
-        ? btn.textContent
-        : "HIDE";
-    });
-  });
 }
 
 function renderPlanDetail(r) {
@@ -512,18 +475,18 @@ function renderPlanDetail(r) {
   if (r.errors && r.errors.length > 0) {
     html += `<div class="detail-section"><span class="detail-heading">ERRORS</span><ul>`;
     r.errors.forEach((msg) => {
-      const ruleId = msg.split(":")[0];
-      const text = msg.slice(ruleId.length + 2);
-      html += `<li><span class="rule-id">${ruleId}</span> ${text}</li>`;
+      const colonIdx = msg.indexOf(": ");
+      const text = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
+      html += `<li>${text}</li>`;
     });
     html += `</ul></div>`;
   }
   if (r.warnings && r.warnings.length > 0) {
     html += `<div class="detail-section"><span class="detail-heading">WARNINGS</span><ul>`;
     r.warnings.forEach((msg) => {
-      const ruleId = msg.split(":")[0];
-      const text = msg.slice(ruleId.length + 2);
-      html += `<li><span class="rule-id">${ruleId}</span> ${text}</li>`;
+      const colonIdx = msg.indexOf(": ");
+      const text = colonIdx > -1 ? msg.slice(colonIdx + 2) : msg;
+      html += `<li>${text}</li>`;
     });
     html += `</ul></div>`;
   }
@@ -542,8 +505,8 @@ async function loadAbout() {
   const cat = document.getElementById("rule-catalogue");
   cat.innerHTML = `
     <table>
-      <tr><th>ID</th><th>Severity</th><th>Description</th></tr>
-      ${data.rules.map((r) => `<tr class="${r.severity}"><td>${r.id}</td><td>${r.severity.toUpperCase()}</td><td>${r.description}</td></tr>`).join("")}
+      <tr><th>Severity</th><th>Description</th></tr>
+      ${data.rules.map((r) => `<tr class="${r.severity}"><td>${r.severity.toUpperCase()}</td><td>${r.description}</td></tr>`).join("")}
     </table>
   `;
 

@@ -55,8 +55,10 @@ try:
     security = TransportSecuritySettings(
         allowed_hosts=["*"],
         allowed_origins=["*"],
+        enable_dns_rebinding_protection=False,
     )
     _mcp_app = _mcp.streamable_http_app(
+        streamable_http_path="/",
         stateless_http=True,
         transport_security=security,
     )
