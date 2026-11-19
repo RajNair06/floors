@@ -208,6 +208,11 @@ def _build_glb(boxes: list[_BoxSpec]) -> bytes:
     for box in boxes:
         idx_data, pos_data, norm_data = _box_geometry(box.w, box.h, box.d)
 
+        # Track original counts before padding
+        idx_count = len(idx_data) // 2  # number of indices (before padding)
+        pos_count = len(pos_data) // 12  # number of vertices (3 floats × 4 bytes)
+        norm_count = len(norm_data) // 12  # number of normals
+
         # Align each chunk to 4 bytes
         idx_data = _pad4(idx_data)
         pos_data = _pad4(pos_data)
@@ -238,18 +243,17 @@ def _build_glb(boxes: list[_BoxSpec]) -> bytes:
         ))
 
         # Compute bounding box
-        n_verts = len(pos_data) // (4 * 3)
-        floats = struct.unpack_from(f"<{n_verts * 3}f", pos_data)
-        xs = [floats[i * 3] for i in range(n_verts)]
-        ys = [floats[i * 3 + 1] for i in range(n_verts)]
-        zs = [floats[i * 3 + 2] for i in range(n_verts)]
+        floats = struct.unpack_from(f"<{pos_count * 3}f", pos_data)
+        xs = [floats[i * 3] for i in range(pos_count)]
+        ys = [floats[i * 3 + 1] for i in range(pos_count)]
+        zs = [floats[i * 3 + 2] for i in range(pos_count)]
 
         # Accessors
         idx_acc = len(gltf.accessors)
         gltf.accessors.append(pygltflib.Accessor(
             bufferView=idx_view,
             componentType=pygltflib.UNSIGNED_SHORT,
-            count=len(idx_data) // 2,  # 2 bytes per unsigned short (before padding)
+            count=idx_count,
             type=pygltflib.SCALAR,
             max=[23], min=[0],  # box always has 24 vertices (0-23)
         ))
@@ -257,32 +261,33 @@ def _build_glb(boxes: list[_BoxSpec]) -> bytes:
         gltf.accessors.append(pygltflib.Accessor(
             bufferView=pos_view,
             componentType=pygltflib.FLOAT,
-            count=n_verts,
+            count=pos_count,
             type=pygltflib.VEC3,
             max=[max(xs), max(ys), max(zs)],
             min=[min(xs), min(ys), min(zs)],
         ))
         norm_acc = pos_acc + 1
-        n_norms = len(norm_data) // (4 * 3)
         gltf.accessors.append(pygltflib.Accessor(
             bufferView=norm_view,
             componentType=pygltflib.FLOAT,
-            count=n_norms,
+            count=norm_count,
             type=pygltflib.VEC3,
         ))
 
         # Material
         mat_idx = len(gltf.materials)
-        alpha_mode = pygltflib.OPAQUE if box.opacity >= 1.0 else pygltflib.BLEND
-        gltf.materials.append(pygltflib.Material(
+        # Only set alphaMode for transparent materials (BLEND)
+        # OPAQUE is the default, so omit it for better compatibility
+        mat = pygltflib.Material(
             pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
                 baseColorFactor=[*box.colour, box.opacity],
                 metallicFactor=0.0,
                 roughnessFactor=0.6,
             ),
-            alphaMode=alpha_mode,
-            doubleSided=True,
-        ))
+        )
+        if box.opacity < 1.0:
+            mat.alphaMode = pygltflib.BLEND
+        gltf.materials.append(mat)
 
         # Mesh + node
         mesh_idx = len(gltf.meshes)
@@ -311,7 +316,89 @@ def _build_glb(boxes: list[_BoxSpec]) -> bytes:
     # Set binary blob and export
     gltf.set_binary_blob(blob)
     chunks = gltf.save_to_bytes()
-    return b"".join(chunks)
+    glb_data = b"".join(chunks)
+    
+    # Post-process: remove default values that pygltflib serializes
+    # (glTF 2.0 spec says defaults should be omitted)
+    return _clean_glb_defaults(glb_data)
+
+
+def _clean_glb_defaults(glb_data: bytes) -> bytes:
+    """Remove default values from GLB JSON that pygltflib serializes."""
+    import json as json_lib
+    
+    # Parse GLB header
+    json_len = struct.unpack_from('<I', glb_data, 12)[0]
+    json_chunk = glb_data[20:20+json_len]
+    bin_chunk = glb_data[20+json_len+8:]  # +8 for chunk header
+    
+    # Parse and clean JSON
+    json_str = json_chunk.rstrip(b'\x20').decode('utf-8')
+    gltf_dict = json_lib.loads(json_str)
+    
+    # Clean materials - remove default values
+    for mat in gltf_dict.get('materials', []):
+        # Remove default emissiveFactor
+        if mat.get('emissiveFactor') == [0.0, 0.0, 0.0]:
+            del mat['emissiveFactor']
+        # Remove default alphaMode
+        if mat.get('alphaMode') == 'OPAQUE':
+            del mat['alphaMode']
+        # Remove default doubleSided
+        if mat.get('doubleSided') is False:
+            del mat['doubleSided']
+        # Remove empty extensions/extras
+        if mat.get('extensions') == {}:
+            del mat['extensions']
+        if mat.get('extras') == {}:
+            del mat['extras']
+        # Clean pbrMetallicRoughness defaults
+        if 'pbrMetallicRoughness' in mat:
+            pbr = mat['pbrMetallicRoughness']
+            if pbr.get('metallicFactor') == 0.0:
+                del pbr['metallicFactor']
+            if pbr.get('roughnessFactor') == 0.6:  # Keep non-default roughness
+                pass  # Keep it
+            if pbr.get('baseColorFactor', [1.0, 1.0, 1.0, 1.0]) == [1.0, 1.0, 1.0, 1.0]:
+                del pbr['baseColorFactor']
+    
+    # Clean accessors - remove default min/max for non-position data
+    for acc in gltf_dict.get('accessors', []):
+        # Keep min/max for position data, remove for others
+        if acc.get('type') != 'VEC3' or acc.get('componentType') != 5126:
+            if 'min' in acc:
+                del acc['min']
+            if 'max' in acc:
+                del acc['max']
+    
+    # Re-serialize JSON with minimal formatting
+    json_str_clean = json_lib.dumps(gltf_dict, separators=(',', ':'))
+    json_bytes = json_str_clean.encode('utf-8')
+    
+    # Pad to 4-byte boundary with spaces
+    while len(json_bytes) % 4 != 0:
+        json_bytes += b' '
+    
+    # Rebuild GLB
+    total_len = 12 + 8 + len(json_bytes) + 8 + len(bin_chunk)
+    
+    result = bytearray()
+    # GLB header
+    result.extend(b'glTF')
+    result.extend(struct.pack('<I', 2))  # version
+    result.extend(struct.pack('<I', total_len))
+    
+    # JSON chunk
+    result.extend(struct.pack('<I', len(json_bytes)))
+    result.extend(struct.pack('<I', 0x4E4F534A))  # JSON chunk type
+    result.extend(json_bytes)
+    
+    # BIN chunk
+    result.extend(struct.pack('<I', len(bin_chunk)))
+    result.extend(struct.pack('<I', 0x004E4942))  # BIN chunk type
+    result.extend(bin_chunk)
+    
+    return bytes(result)
 
 
 def render_glb_base64(plan: Plan, ceiling_height: float = 2.7) -> str:
