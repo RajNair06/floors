@@ -143,16 +143,16 @@ def render_glb(plan: Plan, ceiling_height: float = 2.7) -> bytes:
         dh = min(DOOR_HEIGHT, ceiling_height)
 
         if door.wall == "N":
-            dx, dz = px + door.offset + door.width / 2, pz + from_room.h / 2
+            dx, dz = px + door.offset + door.width / 2, pz
             dw, dd = door.width, WALL_THICKNESS + 0.02
         elif door.wall == "S":
-            dx, dz = px + door.offset + door.width / 2, pz - from_room.h / 2
+            dx, dz = px + door.offset + door.width / 2, pz - from_room.h
             dw, dd = door.width, WALL_THICKNESS + 0.02
         elif door.wall == "W":
-            dx, dz = px - from_room.w / 2, pz - (door.offset + door.width / 2 - from_room.h / 2)
+            dx, dz = px, pz - door.offset - door.width / 2
             dw, dd = WALL_THICKNESS + 0.02, door.width
         else:  # E
-            dx, dz = px + from_room.w / 2, pz - (door.offset + door.width / 2 - from_room.h / 2)
+            dx, dz = px + from_room.w, pz - door.offset - door.width / 2
             dw, dd = WALL_THICKNESS + 0.02, door.width
 
         boxes.append(_BoxSpec(dx, dh / 2, dz, dw, dh, dd, colour))
@@ -168,16 +168,16 @@ def render_glb(plan: Plan, ceiling_height: float = 2.7) -> bytes:
         wh = min(WINDOW_HEIGHT, ceiling_height - wb)
 
         if window.wall == "N":
-            wx, wz = px + window.offset + window.width / 2, pz + room.h / 2
+            wx, wz = px + window.offset + window.width / 2, pz
             ww, wd = window.width, WALL_THICKNESS + 0.03
         elif window.wall == "S":
-            wx, wz = px + window.offset + window.width / 2, pz - room.h / 2
+            wx, wz = px + window.offset + window.width / 2, pz - room.h
             ww, wd = window.width, WALL_THICKNESS + 0.03
         elif window.wall == "W":
-            wx, wz = px - room.w / 2, pz - (window.offset + window.width / 2 - room.h / 2)
+            wx, wz = px, pz - window.offset - window.width / 2
             ww, wd = WALL_THICKNESS + 0.03, window.width
         else:  # E
-            wx, wz = px + room.w / 2, pz - (window.offset + window.width / 2 - room.h / 2)
+            wx, wz = px + room.w, pz - window.offset - window.width / 2
             ww, wd = WALL_THICKNESS + 0.03, window.width
 
         boxes.append(_BoxSpec(wx, wb + wh / 2, wz, ww, wh, wd, WINDOW_COLOUR, 0.6))
